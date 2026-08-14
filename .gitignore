@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+node_modules/
+*.y4m
+qa_*.png
+e2e_*.png
+data/

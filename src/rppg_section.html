@@ -1,0 +1,82 @@
+  <div class="section" id="pulseSection" style="border-top:1px solid var(--border); padding-top:34px;">
+    <h2>Optional: measure your pulse with the camera</h2>
+    <p class="sub">A real measurement, not a questionnaire answer — the camera detects blood-flow changes in your skin.</p>
+
+    <div class="pulse-intro">
+      <p>Each heartbeat pushes blood into the capillaries near your skin's surface. Blood absorbs light — green especially — so for a fraction of a second after every beat, slightly less light reflects back to the camera. That flicker is under 1% of the image brightness, but averaging thousands of pixels across many frames recovers it as a clean pulse waveform. This is an established biomedical technique called <b>photoplethysmography</b>.</p>
+      <p class="pulse-sep"><b>This is measured separately and is not fed into the stroke risk score above.</b> The risk model was trained only on questionnaire data, so quietly mixing a heart-rate reading into its output would misrepresent what that model actually validated.</p>
+    </div>
+
+    <div class="mode-row">
+      <button type="button" class="mode-btn active" data-mode="finger">
+        <span class="mode-title">Fingertip + flash</span>
+        <span class="mode-desc">Recommended — strongest signal</span>
+      </button>
+      <button type="button" class="mode-btn" data-mode="face">
+        <span class="mode-title">Face (contactless)</span>
+        <span class="mode-desc">No contact, but far more sensitive to motion &amp; lighting</span>
+      </button>
+    </div>
+
+    <div class="mode-help" id="modeHelp">
+      Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for 25 seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead.
+    </div>
+
+    <div class="capture-area" id="captureArea">
+      <div class="cam-wrap">
+        <video id="cam" playsinline muted></video>
+        <div class="face-guide" id="faceGuide"></div>
+        <div class="cam-overlay" id="camOverlay">Camera is off</div>
+      </div>
+      <div class="capture-side">
+        <canvas id="wave" width="600" height="150"></canvas>
+        <div class="live-row">
+          <div class="live-stat"><span class="lbl">Elapsed</span><span class="val" id="elapsed">0.0s</span></div>
+          <div class="live-stat"><span class="lbl">Frames</span><span class="val" id="frameCount">0</span></div>
+          <div class="live-stat"><span class="lbl">Brightness</span><span class="val" id="lumaVal">—</span></div>
+        </div>
+        <div class="live-warn" id="liveWarn"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button type="button" id="startPulse" class="btn-primary">Start camera measurement</button>
+      <button type="button" id="stopPulse" class="btn-ghost" style="display:none;">Cancel</button>
+      <button type="button" id="selfTest" class="btn-ghost">Run self-test (no camera)</button>
+    </div>
+    <div class="hint" style="margin-top:8px;">The self-test feeds a synthetic signal of known heart rate through the same processing code — useful to verify the pipeline works when no camera is available.</div>
+
+    <div id="pulseResults" style="display:none;">
+      <div class="pulse-result-card">
+        <div class="pr-main">
+          <div class="pr-bpm" id="bpmVal">—</div>
+          <div class="pr-bpm-lbl">beats per minute</div>
+          <div class="quality-badge" id="qualBadge"></div>
+          <div class="qual-note" id="qualNote"></div>
+        </div>
+        <div class="pr-detail">
+          <canvas id="resultWave" width="640" height="160"></canvas>
+          <div class="metric-grid">
+            <div class="metric"><span class="mlbl">Signal-to-noise</span><span class="mval" id="snrVal">—</span></div>
+            <div class="metric"><span class="mlbl">Stability across windows</span><span class="mval" id="stabVal">—</span></div>
+            <div class="metric"><span class="mlbl">Method used</span><span class="mval" id="methodVal">—</span></div>
+            <div class="metric"><span class="mlbl">Beats detected</span><span class="mval" id="beatsVal">—</span></div>
+            <div class="metric"><span class="mlbl">SDNN <span class="exp">experimental</span></span><span class="mval" id="sdnnVal">—</span></div>
+            <div class="metric"><span class="mlbl">RMSSD <span class="exp">experimental</span></span><span class="mval" id="rmssdVal">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="no-diagnosis">
+        <b>What this is not.</b> SDNN and RMSSD are raw beat-to-beat variability numbers, shown for transparency. They are <b>not</b> an arrhythmia or atrial-fibrillation test. Published camera-based AF detection reaching ~97% accuracy used a classifier trained and validated against ECG-confirmed diagnoses in hundreds of patients; nothing of that kind has been built or validated here, and variability has many benign causes including breathing, movement and caffeine.
+      </div>
+    </div>
+
+    <div class="limitation-panel">
+      <h3>Accuracy limitations — please read</h3>
+      <p><b>This feature has not been validated against a medical-grade reference on real people.</b> Everything below comes from published literature and from our own synthetic-signal testing, not from human trials we conducted.</p>
+      <p><b>Skin tone affects accuracy, and this matters here.</b> Melanin absorbs light, which weakens the very signal this technique depends on. A 2025 review of 100 rPPG studies found mean error rising from about <b>5.2 bpm on lighter skin (Fitzpatrick I–III) to 14.1 bpm on darker skin (Fitzpatrick V–VI)</b>, with a cited meta-analysis reporting a more-than-twofold degradation. Those same datasets under-represent darker skin tones — under 25% of participants. A UCLA group concluded that properly fixing this needs additional hardware (radar fused with camera), not just better software.</p>
+      <p><b>What we did about it.</b> Fingertip-with-flash is the default mode precisely because it floods the tissue with light instead of relying on ambient reflection, which raises signal strength for everyone and disproportionately helps where reflectance is lower. The processing uses POS and CHROM rather than the naive green-channel method. Most importantly, a reading is only reported as reliable if it is <b>stable across independent time windows and agrees between two different algorithms</b> — in our synthetic testing this reduced confidently-wrong readings from 13 in 60 to 0 in 60 under simulated darker-skin, in-motion conditions. When it cannot get a trustworthy reading it says so instead of showing a number.</p>
+      <p><b>Known irreducible limit.</b> A rhythmic disturbance at a steady, heart-rate-plausible frequency (a moving vehicle, rocking, a flickering light) can be mistaken for a pulse in face mode. This is physically ambiguous for a single camera and we have not solved it — it is another reason fingertip mode is the default.</p>
+    </div>
+  </div>

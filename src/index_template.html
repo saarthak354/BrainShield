@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BrainShield — Stroke Risk Self-Assessment</title>
+<style>
+  :root{
+    --navy:#21295C; --blue:#065A82; --teal:#1C7293; --mint:#6FD6C5;
+    --ink:#1B2430; --muted:#5B6472; --card:#F2F6F8; --white:#FFFFFF;
+    --danger:#B85042; --border:#E1E7EC;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family: Calibri, "Segoe UI", Arial, sans-serif; background:var(--white); color:var(--ink);}
+  header{background:var(--navy); color:var(--white); padding:34px 8vw 30px;}
+  header .kicker{color:var(--mint); font-weight:700; letter-spacing:3px; font-size:13px; margin-bottom:8px;}
+  header h1{font-family: Cambria, Georgia, serif; font-size:34px; margin:0 0 8px;}
+  header p{color:#B9D6E8; font-size:15px; margin:0; max-width:760px; line-height:1.5;}
+  main{max-width:920px; margin:0 auto; padding:36px 6vw 80px;}
+  .disclaimer{background:#FBF3E8; border:1px solid #E9D6B8; color:#7A5A24; padding:14px 18px; border-radius:10px; font-size:13.5px; margin-bottom:32px; line-height:1.5;}
+  .section{margin-bottom:34px;}
+  .section h2{font-family: Cambria, Georgia, serif; font-size:20px; color:var(--navy); margin:0 0 4px;}
+  .section .sub{color:var(--muted); font-size:13px; margin:0 0 16px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  @media (max-width:640px){ .grid{grid-template-columns:1fr;} }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field.full{grid-column:1 / -1;}
+  label{font-size:13.5px; font-weight:700; color:var(--ink);}
+  .hint{font-size:12px; color:var(--muted); margin-top:-3px;}
+  input[type="number"], select{
+    padding:10px 12px; border:1px solid var(--border); border-radius:8px; font-size:14.5px;
+    font-family:inherit; color:var(--ink); background:var(--white);
+  }
+  input[type="number"]:focus, select:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+  .toggle{display:flex; gap:8px;}
+  .toggle button{
+    flex:1; padding:10px 8px; border-radius:8px; border:1px solid var(--border); background:var(--white);
+    color:var(--muted); font-family:inherit; font-size:14px; font-weight:700; cursor:pointer;
+  }
+  .toggle button.active{ background:var(--teal); border-color:var(--teal); color:var(--white); }
+  .toggle3 button{flex:1;}
+  .unit-toggle{display:flex; gap:6px; margin-bottom:6px;}
+  .unit-toggle button{padding:5px 10px; font-size:11.5px; border-radius:6px; border:1px solid var(--border); background:var(--white); color:var(--muted); cursor:pointer; font-family:inherit;}
+  .unit-toggle button.active{background:var(--card); border-color:var(--teal); color:var(--teal); font-weight:700;}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  #submitBtn{
+    width:100%; padding:16px; font-size:16px; font-weight:700; color:var(--white);
+    background:var(--navy); border:none; border-radius:10px; cursor:pointer; font-family:inherit;
+    letter-spacing:0.3px;
+  }
+  #submitBtn:hover{ background:#161c47; }
+  #results{ display:none; margin-top:40px; }
+  .result-card{ background:var(--card); border-radius:14px; padding:32px; text-align:center; }
+  .result-card .risk-pct{ font-family:Cambria, Georgia, serif; font-size:60px; font-weight:700; color:var(--navy); }
+  .result-card .risk-label{ font-size:14px; color:var(--muted); margin-top:-6px; }
+  .risk-band{ display:inline-block; margin-top:14px; padding:6px 16px; border-radius:20px; font-size:13px; font-weight:700; }
+  .compare{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; }
+  .compare .box{ background:var(--white); border:1px solid var(--border); border-radius:10px; padding:18px; text-align:center; }
+  .compare .box .val{ font-family:Cambria, Georgia, serif; font-size:28px; font-weight:700; color:var(--teal); }
+  .compare .box.baseline .val{ color:var(--muted); }
+  .compare .box .lbl{ font-size:12.5px; color:var(--muted); margin-top:4px; }
+  .factors{ margin-top:28px; }
+  .factors h3{ font-size:15px; color:var(--navy); margin-bottom:10px; }
+  .factor-chip{ display:inline-block; background:var(--white); border:1px solid var(--border); border-radius:20px; padding:6px 14px; margin:0 6px 8px 0; font-size:12.5px; color:var(--ink); }
+  .factor-chip.hit{ background:var(--navy); color:var(--white); border-color:var(--navy); }
+  footer.note{ margin-top:26px; font-size:12px; color:var(--muted); line-height:1.6; text-align:left; }
+  .model-badge{ margin-top:34px; padding:16px 18px; border-radius:10px; background:var(--white); border:1px solid var(--border); font-size:12.5px; color:var(--muted); line-height:1.6; }
+  .model-badge b{ color:var(--navy); }
+/*__RPPG_CSS__*/
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">BRAINSHIELD</div>
+  <h1>Stroke Risk Self-Assessment</h1>
+  <p>A machine learning model trained on 253,680 real CDC survey respondents, benchmarked against classical clinical risk scores. Every question below is something you can answer about yourself — no clinic visit, lab test, or imaging required.</p>
+</header>
+<main>
+  <div class="disclaimer"><b>This is a self-assessment research tool, not a diagnostic device.</b> It does not replace medical advice. If you are experiencing stroke symptoms (face drooping, arm weakness, speech difficulty), call emergency services immediately.</div>
+
+  <form id="riskForm">
+
+    <div class="section">
+      <h2>About you</h2>
+      <p class="sub">Demographics</p>
+      <div class="grid">
+        <div class="field">
+          <label>Age (years)</label>
+          <input type="number" id="ageYears" min="18" max="99" value="45" required>
+        </div>
+        <div class="field">
+          <label>Sex</label>
+          <div class="toggle" data-field="Sex">
+            <button type="button" data-value="0" class="active">Female</button>
+            <button type="button" data-value="1">Male</button>
+          </div>
+        </div>
+        <div class="field full">
+          <label>Height &amp; weight <span class="hint">(used to calculate BMI)</span></label>
+          <div class="unit-toggle" id="unitToggle">
+            <button type="button" data-unit="metric" class="active">Metric (cm / kg)</button>
+            <button type="button" data-unit="imperial">Imperial (ft-in / lb)</button>
+          </div>
+          <div class="row2" id="metricInputs">
+            <input type="number" id="heightCm" placeholder="Height (cm)" value="170" min="120" max="230">
+            <input type="number" id="weightKg" placeholder="Weight (kg)" value="75" min="30" max="250">
+          </div>
+          <div class="row2" id="imperialInputs" style="display:none;">
+            <input type="number" id="heightFt" placeholder="Height — feet" value="5" min="3" max="7">
+            <input type="number" id="heightIn" placeholder="Height — inches" value="7" min="0" max="11">
+          </div>
+          <div class="row2" id="imperialWeightRow" style="display:none; margin-top:10px;">
+            <input type="number" id="weightLb" placeholder="Weight (lb)" value="165" min="60" max="550">
+            <div></div>
+          </div>
+          <div class="hint" id="bmiPreview">Estimated BMI: —</div>
+        </div>
+        <div class="field">
+          <label>Highest education completed</label>
+          <select id="Education">
+            <option value="1">Never attended / kindergarten only</option>
+            <option value="2">Grades 1–8 (elementary)</option>
+            <option value="3">Grades 9–11 (some high school)</option>
+            <option value="4" selected>High school graduate / GED</option>
+            <option value="5">Some college / technical school</option>
+            <option value="6">College graduate (4+ years)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Annual household income</label>
+          <select id="Income">
+            <option value="1">Less than $10,000</option>
+            <option value="2">$10,000–$14,999</option>
+            <option value="3">$15,000–$19,999</option>
+            <option value="4">$20,000–$24,999</option>
+            <option value="5" selected>$25,000–$34,999</option>
+            <option value="6">$35,000–$49,999</option>
+            <option value="7">$50,000–$74,999</option>
+            <option value="8">$75,000 or more</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Health conditions</h2>
+      <p class="sub">Answer based on what a doctor has told you, if known</p>
+      <div class="grid">
+        <div class="field"><label>High blood pressure?</label><div class="toggle" data-field="HighBP"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+        <div class="field"><label>High cholesterol?</label><div class="toggle" data-field="HighChol"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+        <div class="field"><label>Cholesterol checked in the past 5 years?</label><div class="toggle" data-field="CholCheck"><button type="button" data-value="0">No</button><button type="button" data-value="1" class="active">Yes</button></div></div>
+        <div class="field"><label>Diabetes status</label>
+          <div class="toggle toggle3" data-field="Diabetes">
+            <button type="button" data-value="0" class="active">No</button>
+            <button type="button" data-value="1">Prediabetes</button>
+            <button type="button" data-value="2">Yes</button>
+          </div>
+        </div>
+        <div class="field"><label>Coronary heart disease or heart attack, ever?</label><div class="toggle" data-field="HeartDiseaseorAttack"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+        <div class="field"><label>Serious difficulty walking or climbing stairs?</label><div class="toggle" data-field="DiffWalk"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Lifestyle</h2>
+      <div class="grid">
+        <div class="field"><label>Smoked at least 100 cigarettes in your life?</label><div class="toggle" data-field="Smoker"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+        <div class="field"><label>Physical activity in the past 30 days (outside of work)?</label><div class="toggle" data-field="PhysActivity"><button type="button" data-value="0">No</button><button type="button" data-value="1" class="active">Yes</button></div></div>
+        <div class="field"><label>Eat fruit one or more times per day?</label><div class="toggle" data-field="Fruits"><button type="button" data-value="0">No</button><button type="button" data-value="1" class="active">Yes</button></div></div>
+        <div class="field"><label>Eat vegetables one or more times per day?</label><div class="toggle" data-field="Veggies"><button type="button" data-value="0">No</button><button type="button" data-value="1" class="active">Yes</button></div></div>
+        <div class="field full"><label>Heavy alcohol use? <span class="hint">(men: 14+ drinks/week, women: 7+ drinks/week)</span></label><div class="toggle" data-field="HvyAlcoholConsump"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Healthcare access &amp; general health</h2>
+      <div class="grid">
+        <div class="field"><label>Have any health care coverage?</label><div class="toggle" data-field="AnyHealthcare"><button type="button" data-value="0">No</button><button type="button" data-value="1" class="active">Yes</button></div></div>
+        <div class="field"><label>Skipped needed care due to cost (past 12 months)?</label><div class="toggle" data-field="NoDocbcCost"><button type="button" data-value="0" class="active">No</button><button type="button" data-value="1">Yes</button></div></div>
+        <div class="field full">
+          <label>In general, how would you rate your health?</label>
+          <select id="GenHlth">
+            <option value="1">Excellent</option>
+            <option value="2">Very good</option>
+            <option value="3" selected>Good</option>
+            <option value="4">Fair</option>
+            <option value="5">Poor</option>
+          </select>
+        </div>
+        <div class="field"><label>Days in past 30 your <u>mental</u> health was not good</label><input type="number" id="MentHlth" min="0" max="30" value="0"></div>
+        <div class="field"><label>Days in past 30 your <u>physical</u> health was not good</label><input type="number" id="PhysHlth" min="0" max="30" value="0"></div>
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">Calculate my stroke risk →</button>
+  </form>
+
+<!--__RPPG_SECTION__-->
+
+  <div id="results">
+    <div class="result-card">
+      <div class="risk-pct" id="riskPct">—</div>
+      <div class="risk-label">estimated 5-year self-reported stroke risk</div>
+      <div class="risk-band" id="riskBand"></div>
+
+      <div class="compare">
+        <div class="box baseline">
+          <div class="val" id="baselineVal">—</div>
+          <div class="lbl">Classical-score-style estimate<br>(Framingham/QRISK-type model)</div>
+        </div>
+        <div class="box">
+          <div class="val" id="mlVal">—</div>
+          <div class="lbl">BrainShield ML estimate<br>(calibrated, this study's model)</div>
+        </div>
+      </div>
+
+      <div class="factors">
+        <h3>Factors most associated with elevated risk in this model</h3>
+        <div id="factorChips"></div>
+      </div>
+    </div>
+
+    <div class="model-badge">
+      <b>About this estimate:</b> Generated entirely in your browser — no data was sent anywhere. Model: XGBoost, isotonic-calibrated, trained and validated on CDC BRFSS 2015 (n=253,680). Test-set performance: AUROC 0.828 (95% CI 0.819–0.836) vs. 0.789 for the classical-score baseline shown above, a statistically significant improvement. This tool reflects a cross-sectional self-report association, not a clinically confirmed prospective risk calculation — see the accompanying paper for full methodology and limitations.
+    </div>
+
+    <footer class="note">BrainShield v1 — research prototype. Not for clinical use.</footer>
+  </div>
+</main>
+
+<script>
+/*__MODEL_DATA__*/
+/*__BASELINE_DATA__*/
+/*__SHAP_DATA__*/
+
+// ---------------- Toggle button wiring ----------------
+document.querySelectorAll(".toggle").forEach(function(group){
+  group.querySelectorAll("button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      group.querySelectorAll("button").forEach(function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+    });
+  });
+});
+
+function getToggleValue(fieldName){
+  var group = document.querySelector('.toggle[data-field="' + fieldName + '"]');
+  var active = group.querySelector("button.active");
+  return parseFloat(active.getAttribute("data-value"));
+}
+
+// ---------------- Unit toggle for height/weight ----------------
+var unitToggle = document.getElementById("unitToggle");
+unitToggle.querySelectorAll("button").forEach(function(btn){
+  btn.addEventListener("click", function(){
+    unitToggle.querySelectorAll("button").forEach(function(b){ b.classList.remove("active"); });
+    btn.classList.add("active");
+    var metric = btn.getAttribute("data-unit") === "metric";
+    document.getElementById("metricInputs").style.display = metric ? "grid" : "none";
+    document.getElementById("imperialInputs").style.display = metric ? "none" : "grid";
+    document.getElementById("imperialWeightRow").style.display = metric ? "none" : "grid";
+    updateBmiPreview();
+  });
+});
+
+function computeBMI(){
+  var metric = unitToggle.querySelector("button.active").getAttribute("data-unit") === "metric";
+  var bmi;
+  if (metric){
+    var h = parseFloat(document.getElementById("heightCm").value) / 100;
+    var w = parseFloat(document.getElementById("weightKg").value);
+    bmi = w / (h*h);
+  } else {
+    var ft = parseFloat(document.getElementById("heightFt").value) || 0;
+    var inch = parseFloat(document.getElementById("heightIn").value) || 0;
+    var totalIn = ft*12 + inch;
+    var wlb = parseFloat(document.getElementById("weightLb").value);
+    bmi = 703 * wlb / (totalIn*totalIn);
+  }
+  return bmi;
+}
+function updateBmiPreview(){
+  var bmi = computeBMI();
+  document.getElementById("bmiPreview").textContent = isFinite(bmi) ? ("Estimated BMI: " + bmi.toFixed(1)) : "Estimated BMI: —";
+}
+["heightCm","weightKg","heightFt","heightIn","weightLb"].forEach(function(id){
+  document.getElementById(id).addEventListener("input", updateBmiPreview);
+});
+updateBmiPreview();
+
+function ageToBand(age){
+  var bounds = [24,29,34,39,44,49,54,59,64,69,74,79];
+  for (var i=0;i<bounds.length;i++){ if (age <= bounds[i]) return i+1; }
+  return 13;
+}
+
+// ---------------- XGBoost tree-ensemble inference (validated vs Python, see project notes) ----------------
+function evalTree(node, features){
+  if (Object.prototype.hasOwnProperty.call(node, "leaf")) return node.leaf;
+  var val = features[node.split];
+  var cond = node.split_condition;
+  var nextId;
+  if (val === undefined || val === null || isNaN(val)) { nextId = node.missing; }
+  else if (val < cond) { nextId = node.yes; }
+  else { nextId = node.no; }
+  var child = null;
+  for (var i=0;i<node.children.length;i++){ if (node.children[i].nodeid === nextId){ child = node.children[i]; break; } }
+  return evalTree(child, features);
+}
+function sigmoid(x){ return 1/(1+Math.exp(-x)); }
+function predictRaw(features){
+  var margin = MODEL.base_margin;
+  for (var i=0;i<MODEL.trees.length;i++){ margin += evalTree(MODEL.trees[i], features); }
+  return sigmoid(margin);
+}
+function calibrate(p){
+  var xs = MODEL.isotonic_x, ys = MODEL.isotonic_y;
+  if (p <= xs[0]) return ys[0];
+  if (p >= xs[xs.length-1]) return ys[ys.length-1];
+  for (var i=0;i<xs.length-1;i++){
+    if (p >= xs[i] && p <= xs[i+1]){
+      var t = (xs[i+1] === xs[i]) ? 0 : (p - xs[i])/(xs[i+1]-xs[i]);
+      return ys[i] + t*(ys[i+1]-ys[i]);
+    }
+  }
+  return ys[ys.length-1];
+}
+function baselineRisk(features){
+  var z = BASELINE.intercept;
+  for (var i=0;i<BASELINE.features.length;i++){
+    z += BASELINE.coef[i] * features[BASELINE.features[i]];
+  }
+  return sigmoid(z);
+}
+
+document.getElementById("riskForm").addEventListener("submit", function(e){
+  e.preventDefault();
+
+  var age = parseFloat(document.getElementById("ageYears").value);
+  var bmi = computeBMI();
+
+  var features = {
+    HighBP: getToggleValue("HighBP"),
+    HighChol: getToggleValue("HighChol"),
+    CholCheck: getToggleValue("CholCheck"),
+    BMI: bmi,
+    Smoker: getToggleValue("Smoker"),
+    Diabetes: getToggleValue("Diabetes"),
+    PhysActivity: getToggleValue("PhysActivity"),
+    Fruits: getToggleValue("Fruits"),
+    Veggies: getToggleValue("Veggies"),
+    HvyAlcoholConsump: getToggleValue("HvyAlcoholConsump"),
+    AnyHealthcare: getToggleValue("AnyHealthcare"),
+    NoDocbcCost: getToggleValue("NoDocbcCost"),
+    GenHlth: parseFloat(document.getElementById("GenHlth").value),
+    MentHlth: parseFloat(document.getElementById("MentHlth").value),
+    PhysHlth: parseFloat(document.getElementById("PhysHlth").value),
+    DiffWalk: getToggleValue("DiffWalk"),
+    Sex: getToggleValue("Sex"),
+    Age: ageToBand(age),
+    Education: parseFloat(document.getElementById("Education").value),
+    Income: parseFloat(document.getElementById("Income").value),
+    HeartDiseaseorAttack: getToggleValue("HeartDiseaseorAttack")
+  };
+
+  var raw = predictRaw(features);
+  var cal = calibrate(raw);
+  var base = baselineRisk(features);
+
+  document.getElementById("riskPct").textContent = (cal*100).toFixed(1) + "%";
+  document.getElementById("mlVal").textContent = (cal*100).toFixed(1) + "%";
+  document.getElementById("baselineVal").textContent = (base*100).toFixed(1) + "%";
+
+  var band = document.getElementById("riskBand");
+  if (cal < 0.04){ band.textContent = "Below the study sample's average (4.06%)"; band.style.background="#E4F3EE"; band.style.color="#1E7B5C"; }
+  else if (cal < 0.10){ band.textContent = "Above the study sample's average"; band.style.background="#FDF2DC"; band.style.color="#8A5A00"; }
+  else { band.textContent = "Well above the study sample's average"; band.style.background="#FBE7E5"; band.style.color="#96271C"; }
+
+  var chipsDiv = document.getElementById("factorChips");
+  chipsDiv.innerHTML = "";
+  var userHits = {
+    "Age": age >= 60, "HeartDiseaseorAttack": features.HeartDiseaseorAttack===1, "GenHlth": features.GenHlth>=4,
+    "HighBP": features.HighBP===1, "DiffWalk": features.DiffWalk===1, "Income": features.Income<=3,
+    "PhysHlth": features.PhysHlth>=10, "BMI": bmi>=30, "HighChol": features.HighChol===1,
+    "Smoker": features.Smoker===1, "Diabetes": features.Diabetes>=1
+  };
+  var labels = {Age:"Age", HeartDiseaseorAttack:"Prior heart disease/attack", GenHlth:"General health status",
+    HighBP:"High blood pressure", DiffWalk:"Difficulty walking", Income:"Income", PhysHlth:"Physical health days",
+    BMI:"BMI", HighChol:"High cholesterol", Smoker:"Smoking", Diabetes:"Diabetes"};
+  SHAP_TOP.forEach(function(f){
+    var hit = userHits[f];
+    var chip = document.createElement("span");
+    chip.className = "factor-chip" + (hit ? " hit" : "");
+    chip.textContent = labels[f] + (hit ? " ●" : "");
+    chipsDiv.appendChild(chip);
+  });
+
+  document.getElementById("results").style.display = "block";
+  document.getElementById("results").scrollIntoView({behavior:"smooth"});
+});
+</script>
+<script>
+/*__RPPG_CORE__*/
+</script>
+<script>
+/*__RPPG_UI__*/
+</script>
+</body>
+</html>
