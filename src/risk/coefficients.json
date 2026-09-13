@@ -1,0 +1,612 @@
+{
+  "_README": [
+    "Every number here is transcribed verbatim from a published table so a human can",
+    "check it against the paper. HAZARD RATIOS are stored (not betas) because hazard",
+    "ratios are what the papers print; beta = ln(HR) is derived in fsrp.py.",
+    "Do not edit a value without updating its 'source' string."
+  ],
+  "citation": {
+    "paper": "Dufouil C, Beiser A, McLure LA, et al. Revised Framingham Stroke Risk Profile to Reflect Temporal Trends. Circulation. 2017;135(12):1145-1159.",
+    "doi": "10.1161/CIRCULATIONAHA.115.021275",
+    "pmid": "28159800",
+    "pmcid": "PMC5504355",
+    "open_access_full_text": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5504355/"
+  },
+  "model_form": {
+    "equation": "risk(t|x) = 1 - S0(t) ^ exp(LP(x) - M)",
+    "LP": "sum_j beta_j * x_j,  beta_j = ln(HR_j)",
+    "M": "sum_j beta_j * xbar_j   (covariate-mean centering; xbar from the 'means' block)",
+    "notes": [
+      "Diabetes enters through exactly ONE of dm_age_lt65 / dm_age_ge65, selected by age.",
+      "This mirrors the paper's only retained interaction (age x diabetes); Methods:",
+      "'only the interaction of age with diabetes was significant'.",
+      "SBP enters through exactly ONE of sbp_untreated / sbp_treated, selected by whether",
+      "the person is on antihypertensive medication. The htn_treatment term is a separate",
+      "main effect applied on top when treated.",
+      "age_ge65 is an ADDITIONAL indicator applied on top of the continuous age term."
+    ]
+  },
+  "units": {
+    "age": {
+      "per": 10,
+      "unit": "years",
+      "source": "Table 4 row label: 'Baseline age (10 years)'",
+      "certainty": "explicit in paper"
+    },
+    "sbp": {
+      "per": 10,
+      "unit": "mmHg",
+      "source": "Table 4 rows: 'SBP in non-treated hypertensives (in mmHg)' / 'SBP in treated hypertensives (in mmHg)'",
+      "certainty": "ASSUMED. The paper's row label says 'in mmHg' but does not state the increment. Per-1-mmHg is impossible (HR 1.31^40 is astronomically large over the observed SBP range), so per-10-mmHg is inferred as the field-standard increment. Flagged in validate.py; if the supplemental tables become available this MUST be re-checked."
+    }
+  },
+  "coefficient_sets": {
+    "REGARDS_all": {
+      "label": "REGARDS, all participants, age 55+",
+      "default": true,
+      "why_default": [
+        "n = 23,691 vs 5,072 for the contemporary Framingham sample.",
+        "Follow-up is 5 years - exactly the prediction horizon, so no extrapolation.",
+        "Adjudicated stroke events with 6-monthly active surveillance.",
+        "42% Black participants, so baseline risk can be reported race-specifically.",
+        "All hazard ratios are biologically sensible, unlike the New FHS AF estimate",
+        "for men (HR 1.08, 95% CI 0.61-1.94) which is null on only ~62 events."
+      ],
+      "source": "Table 4, 'REGARDS' column (HRs); Table 3, 'REGARDS' column (means); Table 1, 'REGARDS' column (5-year Kaplan-Meier risk)",
+      "followup_years": 5,
+      "age_range": "55+",
+      "hazard_ratios": {
+        "men": {
+          "age": {
+            "hr": 1.72,
+            "ci": [
+              1.4,
+              2.11
+            ]
+          },
+          "current_smoking": {
+            "hr": 2.0,
+            "ci": [
+              1.55,
+              2.59
+            ]
+          },
+          "prevalent_cvd": {
+            "hr": 1.31,
+            "ci": [
+              1.06,
+              1.62
+            ]
+          },
+          "atrial_fib": {
+            "hr": 1.62,
+            "ci": [
+              1.23,
+              2.14
+            ]
+          },
+          "age_ge65": {
+            "hr": 1.34,
+            "ci": [
+              0.92,
+              1.96
+            ]
+          },
+          "dm_age_lt65": {
+            "hr": 1.94,
+            "ci": [
+              1.31,
+              2.87
+            ]
+          },
+          "dm_age_ge65": {
+            "hr": 1.15,
+            "ci": [
+              0.89,
+              1.49
+            ]
+          },
+          "htn_treatment": {
+            "hr": 1.26,
+            "ci": [
+              0.99,
+              1.6
+            ]
+          },
+          "sbp_untreated": {
+            "hr": 1.09,
+            "ci": [
+              1.0,
+              1.19
+            ]
+          },
+          "sbp_treated": {
+            "hr": 1.05,
+            "ci": [
+              0.97,
+              1.29
+            ],
+            "note": "Paper prints CI '[1.97-1.29]' which is a typographical error; lower bound read as 0.97."
+          }
+        },
+        "women": {
+          "age": {
+            "hr": 1.83,
+            "ci": [
+              1.49,
+              2.24
+            ]
+          },
+          "current_smoking": {
+            "hr": 1.77,
+            "ci": [
+              1.35,
+              2.32
+            ]
+          },
+          "prevalent_cvd": {
+            "hr": 1.52,
+            "ci": [
+              1.18,
+              1.94
+            ]
+          },
+          "atrial_fib": {
+            "hr": 1.57,
+            "ci": [
+              1.17,
+              2.1
+            ]
+          },
+          "age_ge65": {
+            "hr": 1.44,
+            "ci": [
+              0.97,
+              2.14
+            ]
+          },
+          "dm_age_lt65": {
+            "hr": 1.66,
+            "ci": [
+              1.07,
+              2.59
+            ]
+          },
+          "dm_age_ge65": {
+            "hr": 1.11,
+            "ci": [
+              0.84,
+              1.45
+            ]
+          },
+          "htn_treatment": {
+            "hr": 1.19,
+            "ci": [
+              0.93,
+              1.54
+            ]
+          },
+          "sbp_untreated": {
+            "hr": 1.16,
+            "ci": [
+              1.06,
+              1.26
+            ]
+          },
+          "sbp_treated": {
+            "hr": 1.18,
+            "ci": [
+              1.1,
+              1.26
+            ],
+            "note": "Paper prints CI '[1.10-1.26[' with a stray bracket."
+          }
+        }
+      },
+      "means": {
+        "_source": "Table 3, 'REGARDS' column, age 55+",
+        "men": {
+          "age_years": 66.7,
+          "age_ge65": 0.564,
+          "current_smoking": 0.131,
+          "prevalent_cvd": 0.241,
+          "atrial_fib": 0.088,
+          "dm_overall": 0.227,
+          "dm_if_lt65": 0.212,
+          "dm_if_ge65": 0.239,
+          "htn_treatment": 0.492,
+          "sbp_untreated_mmHg": 126,
+          "sbp_treated_mmHg": 132
+        },
+        "women": {
+          "age_years": 66.1,
+          "age_ge65": 0.533,
+          "current_smoking": 0.133,
+          "prevalent_cvd": 0.128,
+          "atrial_fib": 0.085,
+          "dm_overall": 0.214,
+          "dm_if_lt65": 0.206,
+          "dm_if_ge65": 0.221,
+          "htn_treatment": 0.548,
+          "sbp_untreated_mmHg": 123,
+          "sbp_treated_mmHg": 131
+        }
+      },
+      "observed_5yr_risk": {
+        "_source": "Table 1, 'REGARDS' 5-year Kaplan-Meier risk (all stroke)",
+        "_use": "S0(5) is solved numerically so that mean predicted risk over a synthetic cohort matching the published marginals reproduces these values. See fsrp.solve_baseline_survival().",
+        "men": 0.031,
+        "women": 0.027,
+        "men_white": 0.03,
+        "women_white": 0.024,
+        "men_black": 0.034,
+        "women_black": 0.031
+      }
+    },
+    "NewFHS": {
+      "label": "Contemporary Framingham (the published 'new FSRP')",
+      "default": false,
+      "warning": [
+        "Provided for reproducibility of the published new FSRP, NOT recommended as the",
+        "shipping default. Derived on only ~60-62 five-year events, which makes several",
+        "coefficients unstable and, in two cases, clinically misleading:",
+        "  - men, atrial fibrillation: HR 1.08 (0.61-1.94), i.e. null, when AF is one of",
+        "    the strongest established stroke risk factors.",
+        "  - women, prevalent CVD: HR 0.97 (0.61-1.56), i.e. protective, which is not credible.",
+        "Also: Table 5 shows this model miscalibrates significantly outside Framingham",
+        "(calibration chi-square 102.4 in REGARDS Black women, 90.3 in REGARDS women overall)."
+      ],
+      "source": "Table 4, 'New FHS' column; Table 3, 'New FHS' 55+ column; Table 1, 'New FHS' column",
+      "followup_years": 10,
+      "age_range": "55-84",
+      "hazard_ratios": {
+        "men": {
+          "age": {
+            "hr": 1.64,
+            "ci": [
+              1.14,
+              2.38
+            ]
+          },
+          "current_smoking": {
+            "hr": 1.6,
+            "ci": [
+              0.97,
+              2.67
+            ]
+          },
+          "prevalent_cvd": {
+            "hr": 1.57,
+            "ci": [
+              1.05,
+              2.35
+            ]
+          },
+          "atrial_fib": {
+            "hr": 1.08,
+            "ci": [
+              0.61,
+              1.94
+            ],
+            "unreliable": true
+          },
+          "age_ge65": {
+            "hr": 1.58,
+            "ci": [
+              0.79,
+              3.14
+            ]
+          },
+          "dm_age_lt65": {
+            "hr": 3.87,
+            "ci": [
+              1.97,
+              7.61
+            ]
+          },
+          "dm_age_ge65": {
+            "hr": 1.41,
+            "ci": [
+              0.87,
+              2.3
+            ]
+          },
+          "htn_treatment": {
+            "hr": 2.28,
+            "ci": [
+              1.32,
+              3.94
+            ]
+          },
+          "sbp_untreated": {
+            "hr": 1.31,
+            "ci": [
+              1.15,
+              1.5
+            ]
+          },
+          "sbp_treated": {
+            "hr": 1.1,
+            "ci": [
+              0.99,
+              1.23
+            ]
+          }
+        },
+        "women": {
+          "age": {
+            "hr": 2.41,
+            "ci": [
+              1.72,
+              3.38
+            ]
+          },
+          "current_smoking": {
+            "hr": 1.67,
+            "ci": [
+              1.01,
+              2.75
+            ]
+          },
+          "prevalent_cvd": {
+            "hr": 0.97,
+            "ci": [
+              0.61,
+              1.56
+            ],
+            "unreliable": true
+          },
+          "atrial_fib": {
+            "hr": 3.34,
+            "ci": [
+              1.92,
+              5.81
+            ]
+          },
+          "age_ge65": {
+            "hr": 1.49,
+            "ci": [
+              0.69,
+              3.22
+            ]
+          },
+          "dm_age_lt65": {
+            "hr": 2.92,
+            "ci": [
+              0.95,
+              8.98
+            ]
+          },
+          "dm_age_ge65": {
+            "hr": 1.07,
+            "ci": [
+              0.58,
+              1.96
+            ]
+          },
+          "htn_treatment": {
+            "hr": 1.14,
+            "ci": [
+              0.67,
+              1.93
+            ]
+          },
+          "sbp_untreated": {
+            "hr": 1.12,
+            "ci": [
+              0.98,
+              1.28
+            ]
+          },
+          "sbp_treated": {
+            "hr": 1.19,
+            "ci": [
+              1.08,
+              1.3
+            ]
+          }
+        }
+      },
+      "means": {
+        "_source": "Table 3, 'New FHS' column, age 55+",
+        "men": {
+          "age_years": 66.8,
+          "age_ge65": 0.523,
+          "current_smoking": 0.124,
+          "prevalent_cvd": 0.18,
+          "atrial_fib": 0.071,
+          "dm_overall": 0.151,
+          "dm_if_lt65": 0.123,
+          "dm_if_ge65": 0.176,
+          "htn_treatment": 0.421,
+          "sbp_untreated_mmHg": 132,
+          "sbp_treated_mmHg": 139
+        },
+        "women": {
+          "age_years": 67.9,
+          "age_ge65": 0.568,
+          "current_smoking": 0.138,
+          "prevalent_cvd": 0.101,
+          "atrial_fib": 0.032,
+          "dm_overall": 0.089,
+          "dm_if_lt65": 0.074,
+          "dm_if_ge65": 0.099,
+          "htn_treatment": 0.397,
+          "sbp_untreated_mmHg": 129,
+          "sbp_treated_mmHg": 144
+        }
+      },
+      "observed_5yr_risk": {
+        "_source": "Table 1, 'New FHS' column",
+        "men": 0.029,
+        "women": 0.022
+      },
+      "observed_10yr_risk": {
+        "_source": "Table 1, 'New FHS' column",
+        "men": 0.075,
+        "women": 0.065
+      }
+    }
+  },
+  "applicability": {
+    "derived_age_range": [
+      55,
+      84
+    ],
+    "note": "Both coefficient sets are derived exclusively in adults aged 55 and over, stroke-free at baseline. Applying them below age 55 is EXTRAPOLATION and must be labelled as such in any output. See fsrp.applicability().",
+    "requires_stroke_free_at_baseline": true,
+    "outcome": "First incident stroke (ischemic or hemorrhagic), WHO definition, adjudicated."
+  },
+  "known_limitations": [
+    "Discrimination is modest: published c-statistic 0.62-0.78 depending on cohort and sex.",
+    "Calibration is significantly worse in Black participants (Table 5).",
+    "Both cohorts are US-based. Absolute risk will not transport to other countries without recalibrating S0 to local stroke incidence - see recalibrate.py.",
+    "ECG-LVH was dropped from the revised model and is not an input.",
+    "Cholesterol, BMI, physical activity and diet are NOT in this model. Their effects are largely mediated through SBP, diabetes and prevalent CVD, which are included."
+  ],
+  "adjunct_terms": {
+    "_README": [
+      "Risk factors NOT in the source cohort model, added as extra terms in the linear",
+      "predictor using published, covariate-ADJUSTED hazard ratios. This is the standard",
+      "way a validated equation is extended (the same approach SCORE2 uses for regional",
+      "recalibration), and it is only defensible when three things hold:",
+      "  1. the HR comes from a meta-analysis adjusted for the same covariates the base",
+      "     model already contains, so the effect is not double-counted;",
+      "  2. the factor is genuinely absent from the base cohort, so there is nothing to",
+      "     double-count in the first place;",
+      "  3. the centering mean uses the prevalence of the population being scored.",
+      "Each term below states which of these it satisfies and which it assumes."
+    ],
+    "smokeless_tobacco": {
+      "field": "smokeless_tobacco",
+      "label": "Chewed or held tobacco (gutkha, khaini, zarda, paan masala, mishri, betel quid with tobacco)",
+      "hazard_ratio": 1.35,
+      "ci": [
+        1.2,
+        1.5
+      ],
+      "source": "Pooled RR for stroke in chewing-tobacco users vs non-chewers. Association of smokeless tobacco and cerebrovascular accident: a systematic review and meta-analysis of global data. J Public Health (Oxf). 2020;42(2):e150. Overall smokeless-tobacco RR was 1.17 (1.04-1.30); the chewing-tobacco subgroup, which is the dominant Indian form, was 1.35 (1.20-1.50).",
+      "why_needed": [
+        "The base model asks only about SMOKING. In India that misses a very large group:",
+        "GATS-2 (2016-17) found 29.6% of men and 12.8% of women currently use smokeless",
+        "tobacco. Those users currently score as zero tobacco risk.",
+        "The smokeless-tobacco-attributable fraction of fatal stroke is highest in India,",
+        "at 14.8% (same meta-analysis)."
+      ],
+      "why_separate_from_smoking": [
+        "Its effect is materially smaller than smoking (REGARDS smoking HR is 2.00 in men,",
+        "1.77 in women). Folding smokeless users into the smoking question would",
+        "OVERESTIMATE their risk by roughly 50%. It is a separate question with its own",
+        "coefficient."
+      ],
+      "means": {
+        "_source": "GATS-2 India 2016-17, current smokeless tobacco use",
+        "men": 0.296,
+        "women": 0.128,
+        "confidence": "high - nationally representative survey, n>74,000"
+      },
+      "assumptions_and_limits": [
+        "ASSUMED INDEPENDENT of the base model's covariates. The base cohorts (REGARDS,",
+        "Framingham) are US populations where smokeless tobacco use is uncommon and was",
+        "not a modelled covariate, so there is little to double-count - condition 2 holds.",
+        "The meta-analysis pools studies with heterogeneous adjustment, so condition 1 is",
+        "only partly satisfied. Treat this term as the least certain part of the estimate.",
+        "Dual users (smoking AND chewing) get both terms, which may overstate the combined",
+        "effect if the two share a mechanism."
+      ],
+      "centering": {
+        "centre_at": 0,
+        "why": [
+          "The adjunct term is centred at ZERO, not at Indian prevalence.",
+          "S0 is anchored to the base cohort (REGARDS), where smokeless tobacco use is",
+          "uncommon and was not a covariate - so NON-USE is already the reference level that",
+          "S0 was calibrated against. A non-user therefore gets no adjustment, and a user gets",
+          "+ln(1.35).",
+          "Centring on Indian prevalence instead would hand every Indian non-user a discount",
+          "below the US baseline, which nothing in the evidence supports.",
+          "The 'means' block above is used ONLY as a prior when the user answers 'not sure'."
+        ]
+      }
+    }
+  },
+  "population_priors": {
+    "_README": [
+      "Priors used ONLY to propagate uncertainty when a user answers 'not sure'. They do",
+      "not change the coefficients, and they do not affect anyone who answers every",
+      "question. Selecting the wrong population makes unknown-input ranges wrong, not the",
+      "point estimates."
+    ],
+    "US_REGARDS": {
+      "label": "US, REGARDS cohort (default)",
+      "note": "Read from the coefficient set's own means block; see uncertainty.py _priors()."
+    },
+    "India": {
+      "label": "India, national surveys",
+      "_WARNING": [
+        "These are assembled from several national surveys, not one cohort, and one of them",
+        "is DERIVED rather than measured. Check each before relying on it."
+      ],
+      "current_smoking": {
+        "men": 0.19,
+        "women": 0.02,
+        "source": "GATS-2 India 2016-17, current smoking",
+        "confidence": "high"
+      },
+      "smokeless_tobacco": {
+        "men": 0.296,
+        "women": 0.128,
+        "source": "GATS-2 India 2016-17, current smokeless tobacco use",
+        "confidence": "high"
+      },
+      "diabetes": {
+        "men": 0.119,
+        "women": 0.078,
+        "source": "NFHS-5 (2019-21), highest age band reported: men >50y 11.9%, women 45-49y 7.8%",
+        "confidence": "medium - NFHS-5 likely UNDERESTIMATES relative to ICMR-INDIAB measured prevalence (~11-12% nationally, higher in urban areas). Revise upward if INDIAB age/sex bands are available."
+      },
+      "htn_treatment": {
+        "men": 0.132,
+        "women": 0.137,
+        "source": "DERIVED, not measured: hypertension prevalence (NFHS-5: men >50y 41.4%, women 45-49y 31.2%) multiplied by awareness (NFHS-5: men 32%, women 44%).",
+        "confidence": "LOW - this is the weakest number in the file. Awareness is an upper bound on treatment, so the true figure is lower still. What matters is the direction, which is not in doubt: far fewer Indian adults are on BP medication than the ~49-55% in REGARDS."
+      },
+      "_the_important_consequence": [
+        "Only 32% of hypertensive Indian men and 44% of women are even AWARE of it, against",
+        "roughly half of REGARDS participants being on treatment. So in India 'I don't know",
+        "my blood pressure' is the normal case, not the exception.",
+        "That makes the uncertainty-propagation and 'go measure this first' features more",
+        "valuable here than in the population the model was built on, not less."
+      ]
+    }
+  },
+  "NOT_DONE_absolute_risk_recalibration": {
+    "status": "NOT IMPLEMENTED - the single largest remaining gap for Indian users",
+    "what_is_wrong_now": [
+      "S0(5) is solved against US stroke incidence (REGARDS Kaplan-Meier). The RELATIVE",
+      "effects of the risk factors transport reasonably well between populations; the",
+      "ABSOLUTE baseline does not. So an Indian user currently gets correctly-ordered",
+      "risk with a US-anchored magnitude."
+    ],
+    "what_the_evidence_says": [
+      "ICMR-NCDIR population-based stroke registries report crude stroke incidence of",
+      "138.1 per 100,000.",
+      "Stroke in India occurs at a younger age than in Western cohorts, and incidence in",
+      "18-49 year olds is 46 per 100,000 against 5-15 in Europe and ~20 in North America.",
+      "But age-SPECIFIC rates in recent Indian population studies are reported as broadly",
+      "comparable to Western populations - so the headline difference is substantially an",
+      "age-structure effect, NOT a uniform multiplier. Scaling S0 by a single factor would",
+      "therefore be wrong."
+    ],
+    "what_is_needed": [
+      "Age- and sex-specific 5-year stroke incidence for India, from the ICMR National",
+      "Stroke Registry Programme (Lancet Reg Health SEA, 2023) or GBD India.",
+      "fsrp.solve_baseline_survival() already takes the observed risk as its target, so",
+      "supplying those rates is a data task, not a modelling one."
+    ],
+    "second_problem": [
+      "The model is derived only on ages 55-84. Because Indian stroke skews younger, a",
+      "larger share of Indian users fall below that range than would in the US - so the",
+      "extrapolation warning will fire more often, and it matters more."
+    ]
+  }
+}

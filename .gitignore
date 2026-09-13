@@ -5,3 +5,31 @@ node_modules/
 qa_*.png
 e2e_*.png
 data/
+
+# ---- third-party research data, downloaded not authored ----
+# Excluding these keeps the repo ~157 MB smaller and avoids redistributing data
+# that belongs to its original publishers. Each is re-fetchable by a script here:
+#   gdansk/            -> manual fetch, see tests/validate_gdansk.js header
+#   butppg_cache.json  -> src/af/cache_butppg.py
+#   afdb_*.npz         -> src/af/build_afdb.py
+#   deepbeat_*         -> src/af/prep_deepbeat.py
+src/af/gdansk/
+src/af/butppg_cache.json
+src/af/deepbeat_prepared.json
+src/af/*.npz
+
+# ---- regenerable test fixtures ----
+# recreated by src/risk/export_risk_model.py
+tests/risk_parity_fixture.json
+
+# ---- validation outputs (results, not source) ----
+src/af/butppg_results.json
+src/af/butppg_js_results.json
+src/af/deepbeat_results.json
+
+# ---- LaTeX build products ----
+paper/*.log
+paper/*.aux
+paper/*.out
+paper/*.bbl
+paper/*.blg

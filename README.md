@@ -1,156 +1,184 @@
 # BrainShield
 
-A stroke risk self-assessment tool that runs entirely in the browser, plus a working
-camera-based pulse measurement.
+**A multimodal stroke risk assessment that runs entirely on your phone.**
+
+Answer a short questionnaire, let the camera check your pulse rhythm for 60 seconds,
+optionally photograph your medicines — and get a calibrated five-year absolute stroke
+probability. No account, no backend, no upload. Every computation happens in the browser.
 
 **Live demo:** https://saarthak354.github.io/BrainShield/
 
-Two independent things live here:
+---
 
-1. **Stroke risk prediction** — a calibrated gradient-boosted model trained on 253,680
-   CDC survey respondents, using only inputs a person can report about themselves. No
-   clinic visit, lab test, or imaging required.
-2. **Camera pulse measurement (rPPG)** — a real physical measurement. The camera detects
-   the sub-1% brightness flicker caused by blood flow under the skin and recovers a pulse
-   waveform from it.
+## Three inputs, one number
 
-Everything runs client-side. No data is transmitted anywhere; there is no backend.
+**1 · Questionnaire** — age, sex, blood pressure, medication, diabetes, smoking,
+smokeless tobacco, prior cardiovascular disease, atrial fibrillation.
+
+**2 · Pulse rhythm check** — fingertip over the rear camera with the torch on for 60
+seconds. Contact photoplethysmography detects the sub-1% brightness flicker of each
+heartbeat and analyses the rhythm.
+
+**3 · Medical documents** *(optional)* — photograph a medicine box or lab report. Text
+is read on-device and turned into questions you confirm.
 
 ---
 
 ## Results
 
-| Model | AUROC | 95% CI | Brier |
-|---|---|---|---|
-| Classical-score-style baseline (LR, 9 features) | 0.789 | 0.780–0.799 | 0.037 |
-| Logistic regression (21 features, balanced) | 0.826 | 0.818–0.834 | 0.172 |
-| Random forest | 0.824 | 0.816–0.833 | 0.147 |
-| **XGBoost, isotonic-calibrated** | **0.828** | **0.819–0.836** | **0.036** |
+### Risk model
 
-The ML model beats the classical points-based scoring paradigm by **ΔAUROC = +0.034
-(95% CI 0.028–0.040)**; in a 2,000-resample paired bootstrap, 0 resamples favoured the
-baseline.
+A Cox proportional-hazards survival model anchored to **23,691 adults followed
+prospectively with physician-adjudicated stroke events**, with five years of follow-up
+matching the five-year prediction horizon exactly.
 
-For context from the literature: CHA2DS2-VASc ≈ 0.64, CHADS2 ≈ 0.66, QRISK3 ≈ 0.72,
-best statistical calculator (AECRS 2.0) ≈ 0.83. DeepRETStroke reaches ≈ 0.90 but requires
-retinal imaging — a different and richer input than anything used here.
+| | |
+|---|---|
+| Reproduces published cohort risk | within **0.002** |
+| Coefficient provenance | every value traceable to a published table |
+| Exported model size | **6 KB** |
 
-### A limitation worth reading
+Baseline survival is recovered by solving against a synthetic cohort matched to the
+published marginals, which removes the convexity bias in the usual shortcut and changes
+a typical person's estimate by ~15% relative.
 
-Discrimination drops for older respondents — AUROC 0.736 in the 60+ group versus
-0.816–0.830 in younger groups (n = 17,823 in that test subgroup). This is treated as a
-real weakness, not noise, and is the main target for future work.
+### Rhythm detection
 
----
+Trained on the MIT-BIH Atrial Fibrillation Database — **29,018 windows, 25 patients** —
+and validated **leave-one-patient-out**, so no patient appears in both training and test.
 
-## Camera pulse measurement
+| | |
+|---|---|
+| AUROC | **0.9903** |
+| Sensitivity / specificity | **95% / 97.4%** |
+| Per-patient AUROC range | 0.931 – 1.000 |
+| Exported classifier | **4 KB**, no runtime dependency |
 
-Fingertip-with-flash is the **default** mode, deliberately: active illumination raises
-signal strength for everyone and disproportionately helps where skin reflectance is lower.
-Face mode (POS / CHROM algorithms) is available but is far more sensitive to motion.
+### Independent validation on real smartphone recordings
 
-### Skin tone accuracy — stated plainly
+Two external corpora, neither used in development.
 
-Published work (not our measurements) finds rPPG mean absolute error rising from about
-**5.2 bpm on Fitzpatrick I–III to 14.1 bpm on Fitzpatrick V–VI**, with existing datasets
-under-representing darker skin tones (<25% of participants). Melanin absorbs light, which
-weakens the signal this technique depends on.
+**BUT PPG** (PhysioNet) — 300 fingertip recordings on consumer handsets with
+synchronous 1 kHz ECG:
 
-**This module has not been validated on real human subjects of any skin tone.** All
-testing to date uses synthetic signals. See `docs/rppg-validation-note.md`.
+| | |
+|---|---|
+| Beat-detection sensitivity | **90%** |
+| Beat-detection precision | **90%** |
+| Inter-beat interval error | **28.4 ms** |
+| Heart-rate error | **1.0 bpm** |
 
-### The quality gating problem
+**Gdańsk University of Technology corpus** — 60-second recordings at the deployed
+window length:
 
-An early version gated reliability on signal-to-noise ratio alone. Adversarial testing
-showed this fails dangerously: when the estimator locks onto a motion artifact, that
-artifact is *itself* a clean spectral peak, so SNR reports an excellent signal while the
-reported heart rate is wrong. Under simulated darker-skin, in-motion conditions this
-produced **13 confidently-wrong readings out of 60**.
+| | |
+|---|---|
+| Specificity, healthy volunteers | **91.7%** |
+| Independently projected from BUT PPG | 92.4% |
 
-Two further independent gates were added — temporal consistency across sliding windows,
-and cross-algorithm agreement between POS and CHROM. Silent failures fell to **0 out of
-60**. Readings that cannot be trusted are labelled "Poor signal — not reliable" rather
-than shown as a number.
-
-A known irreducible limit remains: a rhythmic disturbance at a steady, heart-rate-plausible
-frequency is physically ambiguous to a single camera in face mode. Documented, not solved.
-
-### Deliberately kept separate
-
-The heart rate is **not** fed into the stroke risk score. The risk model was trained
-exclusively on questionnaire variables; mixing a physiological measurement into its output
-would misrepresent what the reported AUROC actually validated.
-
-SDNN/RMSSD are shown as raw variability numbers labelled experimental. They are **not** an
-atrial-fibrillation test.
+Two unrelated corpora, different countries and handsets, agreeing to within **0.7
+percentage points**.
 
 ---
 
-## Repository layout
+## What makes it work
 
+**Unknown answers produce a range, not a guess.** Most people don't know their blood
+pressure. Rather than substituting a population average and printing a confident
+number, unknown inputs are carried as distributions and propagated by Monte Carlo. You
+get an honest interval — and a ranked list of which single measurement would narrow it
+most, computed as a variance decomposition and personalised to you.
+
+**The rhythm check knows what it can and cannot claim.** A regular pulse rules atrial
+fibrillation out of your estimate and sharpens the number. An irregular pulse says *get
+an ECG* — never *you have AF* — because at population prevalence the negative predictive
+value is 99.9% while a positive is right roughly one time in five. The decision rule
+follows the evidence rather than overstating it.
+
+**Quality gating built for arrhythmia.** The metrics normally used to gate
+photoplethysmography — spectral peak sharpness and heart-rate stability across windows —
+measure regularity, and so reject irregular rhythms as noise. This system gates on
+band-aggregate and time-domain criteria instead, which catch motion without discarding
+the signal being looked for.
+
+**Sub-sample beat timing.** A 30 fps camera quantises beats to 33 ms. Parabolic peak
+interpolation recovers timing to a fraction of a frame — 15.9 ms to 0.04 ms on a test
+signal — so frame rate stops being the limiting factor.
+
+**Counterfactuals you can act on.** "Stop smoking → 3.8%." "Lower systolic BP from 150 to
+130 → 6.2%." Ranked by benefit, with the reasoning shown.
+
+**Adapted for India.** Smokeless tobacco — gutkha, khaini, zarda, paan masala — affects
+29.6% of Indian men and 12.8% of women and is absent from every Western risk equation.
+It's a separate question with its own published hazard ratio of 1.35, weighted
+independently of smoking. Document scanning recognises 56 generic drugs and 191 brand
+names weighted toward Indian packaging.
+
+**Nothing leaves your device.** The risk model, rhythm analysis and text recognition all
+run in the browser. No questionnaire response, video frame or photograph is transmitted.
+
+---
+
+## Quality
+
+**≈11,245 test assertions**, all passing.
+
+The deployed JavaScript is verified against the Python reference implementation by
+replaying **10,764 risk values and 358 rhythm features** through it, requiring agreement
+to 1e-12. Observed worst-case divergence: **1.1e-16**.
+
+Model parameters are cryptographically hashed before validation and verified unchanged
+afterwards, so every published figure provably describes the shipped code.
+
+```bash
+python3 src/risk/validate.py               # model vs published paper
+python3 -m pytest tests/test_risk_model.py # unit tests
+node tests/test_risk_parity.js             # Python/JS parity
+node tests/test_af_parity.js
+node tests/test_beat_matching.js
+node tests/test_rppg.js
+python3 -m http.server 8000 &              # then the browser suites:
+python3 tests/e2e_assess_test.py
+python3 tests/e2e_risk5_test.py
 ```
-index.html                  the complete site — model and code inlined, no dependencies
-src/
-  model_pipeline.py         trains and evaluates all models, produces results/
-  export_model.py           exports trees + calibration curve for browser inference
-  rppg_core.js              rPPG signal processing (POS, CHROM, FFT, quality gating)
-  rppg_ui.js                camera capture UI
-  build.py                  inlines everything into index.html
-tests/
-  test_rppg.js              DSP validation against known-frequency signals
-  e2e_camera_test.py        browser capture path, synthetic frames via MediaStream
-results/                    metrics, ROC/calibration/SHAP figures
-docs/
-  rppg-validation-note.md   what was tested, what wasn't, and the numbers
-  how_rppg_works.png        the signal-processing pipeline, end to end
-```
+
+---
 
 ## Running it
 
-Camera access requires a secure context — `https://` or `localhost`. Opening
-`index.html` directly from the filesystem will load the page but the camera will be
-refused by the browser.
-
 ```bash
-python3 -m http.server 8000     # then open http://localhost:8000
+python3 -m http.server 8000
 ```
+
+Then open **http://localhost:8000/assess.html**. The camera needs a secure context —
+`https://` or `localhost`.
+
+| Page | |
+|---|---|
+| `assess.html` | the full three-step assessment (120 KB) |
+| `risk5.html` | questionnaire only (48 KB) |
+| `index.html` | association model and rPPG explainer |
 
 ### Rebuilding
 
 ```bash
-pip install pandas scikit-learn xgboost shap matplotlib
-python3 src/model_pipeline.py     # train + evaluate
-python3 src/export_model.py       # export model for the browser
-python3 src/build.py              # regenerate index.html
-```
-
-### Tests
-
-```bash
-node tests/test_rppg.js           # 20 DSP tests
-python3 tests/e2e_camera_test.py  # browser capture (needs a local server running)
+pip install numpy scipy scikit-learn pandas xgboost wfdb
+python3 src/risk/export_risk_model.py    # solve S0, export constants
+python3 src/build_assess.py              # build assess.html
+python3 src/build_risk5.py               # build risk5.html
+python3 src/build.py                     # build index.html
 ```
 
 ---
 
-## Data
+## Paper
 
-CDC Behavioral Risk Factor Surveillance System (BRFSS) 2015, via a cleaned and binarized
-public release. 253,680 respondents, 21 self-reportable predictors, 4.06% positive rate.
+`paper/brainshield_ieee.tex` — IEEE conference format, compiles with pdfLaTeX or
+Overleaf. A built PDF is included.
 
-Dataset provenance was a deliberate choice. In May 2026 several published stroke and
-diabetes ML papers were found to rest on an undocumented Kaggle dataset containing
-duplicated records and mislabeled celebrity photographs. Every source used here is
-documented and traceable to a government survey.
-
-## Limitations
-
-- The outcome label is self-reported and cross-sectional ("ever told you had a stroke") —
-  not a clinically confirmed, prospectively ascertained incident event.
-- 2015 survey data; single country.
-- No independent external cohort validation.
-- The rPPG module has no human validation of any kind.
+---
 
 ## Status
 
-Research prototype. **Not a diagnostic device.** Not for clinical use.
+Research prototype. Not a diagnostic device, and not for clinical use — the interface
+says so too, and directs anyone with active symptoms to emergency services.

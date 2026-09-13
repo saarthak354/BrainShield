@@ -1,0 +1,475 @@
+{
+  "_README": [
+    "Maps medication names found by OCR to the risk model's input variables.",
+    "Brand names are India-weighted alongside internationals, since a photographed",
+    "box in India will show the brand far more prominently than the generic.",
+    "",
+    "'implies' names a Profile field. 'confidence' is how safely that inference holds:",
+    "  high   - the drug is essentially only used for that condition",
+    "  medium - common for it, but has other indications",
+    "  signal - does NOT set the field; raises a question for the user to confirm",
+    "",
+    "Nothing here ever sets a model variable on its own. OCR proposes, the user confirms."
+  ],
+  "classes": {
+    "antihypertensive": {
+      "implies": "on_htn_meds",
+      "confidence": "high",
+      "prompt": "This looks like a blood-pressure medication. Do you take it regularly?",
+      "drugs": {
+        "amlodipine": [
+          "amlokind",
+          "stamlo",
+          "amlodac",
+          "norvasc",
+          "amlong",
+          "amlopres"
+        ],
+        "telmisartan": [
+          "telma",
+          "telsartan",
+          "micardis",
+          "telvas",
+          "telmikind"
+        ],
+        "losartan": [
+          "losar",
+          "cozaar",
+          "repace",
+          "losacar",
+          "tozaar"
+        ],
+        "olmesartan": [
+          "olmezest",
+          "benicar",
+          "olmat",
+          "olmesar"
+        ],
+        "ramipril": [
+          "cardace",
+          "altace",
+          "ramistar",
+          "ramipres"
+        ],
+        "enalapril": [
+          "envas",
+          "vasotec",
+          "enam"
+        ],
+        "lisinopril": [
+          "zestril",
+          "prinivil",
+          "listril",
+          "lisoril"
+        ],
+        "atenolol": [
+          "tenormin",
+          "aten",
+          "atecard"
+        ],
+        "metoprolol": [
+          "metolar",
+          "lopressor",
+          "betaloc",
+          "metpure",
+          "starpress"
+        ],
+        "bisoprolol": [
+          "concor",
+          "corbis",
+          "bisoheart"
+        ],
+        "nebivolol": [
+          "nebicard",
+          "nodon",
+          "nebistar"
+        ],
+        "hydrochlorothiazide": [
+          "hctz",
+          "hydrazide",
+          "aquazide"
+        ],
+        "chlorthalidone": [
+          "hygroton",
+          "ctd",
+          "chlorpres"
+        ],
+        "cilnidipine": [
+          "cilacar",
+          "cilnipine",
+          "nexovas"
+        ],
+        "torsemide": [
+          "dytor",
+          "demadex"
+        ],
+        "indapamide": [
+          "natrilix",
+          "lorvas"
+        ]
+      }
+    },
+    "antidiabetic": {
+      "implies": "diabetes",
+      "confidence": "high",
+      "prompt": "This looks like a diabetes medication. Have you been diagnosed with diabetes?",
+      "drugs": {
+        "metformin": [
+          "glycomet",
+          "glucophage",
+          "obimet",
+          "carbophage",
+          "gluconorm",
+          "walaphage"
+        ],
+        "glimepiride": [
+          "amaryl",
+          "glimestar",
+          "zoryl",
+          "glimy",
+          "glimepride"
+        ],
+        "gliclazide": [
+          "diamicron",
+          "reclide",
+          "glizid",
+          "dianorm"
+        ],
+        "glipizide": [
+          "glynase",
+          "glucotrol"
+        ],
+        "sitagliptin": [
+          "januvia",
+          "istavel",
+          "sitara",
+          "zituvia"
+        ],
+        "vildagliptin": [
+          "galvus",
+          "jalra",
+          "zomelis",
+          "vysov"
+        ],
+        "teneligliptin": [
+          "tenepure",
+          "zita",
+          "teneza"
+        ],
+        "linagliptin": [
+          "trajenta",
+          "ondero"
+        ],
+        "pioglitazone": [
+          "pioz",
+          "actos",
+          "piozone"
+        ],
+        "insulin": [
+          "lantus",
+          "humalog",
+          "novorapid",
+          "mixtard",
+          "huminsulin",
+          "basalog",
+          "glaritus",
+          "actrapid",
+          "tresiba",
+          "ryzodeg"
+        ],
+        "voglibose": [
+          "volix",
+          "vogs"
+        ],
+        "acarbose": [
+          "glucobay"
+        ]
+      }
+    },
+    "sglt2_dual_use": {
+      "implies": "diabetes",
+      "confidence": "medium",
+      "prompt": "This is used for diabetes and also for heart failure. Have you been diagnosed with diabetes?",
+      "drugs": {
+        "empagliflozin": [
+          "jardiance",
+          "empaglyn",
+          "gibtulio"
+        ],
+        "dapagliflozin": [
+          "forxiga",
+          "dapanorm",
+          "sugafit",
+          "oxra"
+        ]
+      }
+    },
+    "anticoagulant": {
+      "implies": "atrial_fib",
+      "confidence": "signal",
+      "prompt": "Blood thinners like this are most often prescribed for atrial fibrillation, though also for clots or a heart valve. Were you prescribed it for an irregular heartbeat?",
+      "drugs": {
+        "warfarin": [
+          "coumadin",
+          "warf",
+          "uniwarfin",
+          "sofarin"
+        ],
+        "acenocoumarol": [
+          "acitrom",
+          "sintrom",
+          "nicoumalone"
+        ],
+        "apixaban": [
+          "eliquis",
+          "apixabid",
+          "apixita"
+        ],
+        "rivaroxaban": [
+          "xarelto",
+          "rivaflo",
+          "riva"
+        ],
+        "dabigatran": [
+          "pradaxa",
+          "dabigat"
+        ],
+        "edoxaban": [
+          "lixiana",
+          "savaysa"
+        ]
+      }
+    },
+    "antiarrhythmic": {
+      "implies": "atrial_fib",
+      "confidence": "signal",
+      "prompt": "This medication controls heart rhythm. Have you been told you have an irregular heartbeat or atrial fibrillation?",
+      "drugs": {
+        "amiodarone": [
+          "cordarone",
+          "tachyra",
+          "amiodar",
+          "duron"
+        ],
+        "flecainide": [
+          "tambocor",
+          "flecarite"
+        ],
+        "propafenone": [
+          "rythmol",
+          "propafen"
+        ],
+        "sotalol": [
+          "sotalar",
+          "betapace"
+        ],
+        "digoxin": [
+          "lanoxin",
+          "digoxin",
+          "digitek"
+        ],
+        "dronedarone": [
+          "multaq"
+        ]
+      }
+    },
+    "cardiovascular": {
+      "implies": "prevalent_cvd",
+      "confidence": "medium",
+      "prompt": "This is usually prescribed after a heart problem. Have you had a heart attack, angina, stent, bypass, or heart failure?",
+      "drugs": {
+        "clopidogrel": [
+          "plavix",
+          "clopilet",
+          "deplatt",
+          "clopivas",
+          "ceruvin"
+        ],
+        "ticagrelor": [
+          "brilinta",
+          "axcer",
+          "ticaflo"
+        ],
+        "prasugrel": [
+          "prasita",
+          "effient",
+          "prasudoc"
+        ],
+        "isosorbide": [
+          "sorbitrate",
+          "angispan",
+          "monotrate",
+          "imdur",
+          "isordil"
+        ],
+        "nitroglycerin": [
+          "nitrocontin",
+          "glyceryl trinitrate",
+          "gtn",
+          "nitrostat"
+        ],
+        "ranolazine": [
+          "ranexa",
+          "ranozex"
+        ],
+        "ivabradine": [
+          "ivabrad",
+          "procoralan",
+          "corlanor"
+        ],
+        "sacubitril": [
+          "vymada",
+          "entresto",
+          "azmarda"
+        ]
+      }
+    },
+    "statin": {
+      "implies": "prevalent_cvd",
+      "confidence": "signal",
+      "prompt": "Statins are prescribed for high cholesterol alone, and also after a heart problem. Have you had a heart attack, angina, stent or bypass?",
+      "drugs": {
+        "atorvastatin": [
+          "lipitor",
+          "atorva",
+          "storvas",
+          "aztor",
+          "tonact",
+          "atocor"
+        ],
+        "rosuvastatin": [
+          "crestor",
+          "rosuvas",
+          "rozavel",
+          "rosulip"
+        ],
+        "simvastatin": [
+          "zocor",
+          "simvotin"
+        ],
+        "pravastatin": [
+          "pravachol"
+        ],
+        "ezetimibe": [
+          "zetia",
+          "ezedoc"
+        ]
+      }
+    },
+    "cardiac_aspirin": {
+      "implies": "prevalent_cvd",
+      "confidence": "signal",
+      "prompt": "Low-dose aspirin is sometimes taken after a heart problem and sometimes as prevention. Were you prescribed it by a doctor for your heart?",
+      "drugs": {
+        "aspirin": [
+          "ecosprin",
+          "disprin",
+          "aspicot",
+          "loprin",
+          "delisprin",
+          "acetylsalicylic"
+        ]
+      }
+    }
+  },
+  "lab_tests": {
+    "hba1c": {
+      "aliases": [
+        "hba1c",
+        "hb a1c",
+        "glycosylated haemoglobin",
+        "glycosylated hemoglobin",
+        "glycated haemoglobin",
+        "glycated hemoglobin",
+        "a1c"
+      ],
+      "unit": "%",
+      "implies": "diabetes",
+      "rule": ">= 6.5 indicates diabetes; 5.7-6.4 is prediabetes",
+      "threshold": 6.5,
+      "plausible_range": [
+        3.0,
+        20.0
+      ]
+    },
+    "fasting_glucose": {
+      "aliases": [
+        "fasting blood sugar",
+        "fasting glucose",
+        "fbs",
+        "fasting plasma glucose",
+        "fpg"
+      ],
+      "unit": "mg/dL",
+      "implies": "diabetes",
+      "rule": ">= 126 mg/dL on two occasions indicates diabetes",
+      "threshold": 126,
+      "plausible_range": [
+        40,
+        600
+      ]
+    },
+    "systolic_bp": {
+      "aliases": [
+        "blood pressure",
+        "bp",
+        "systolic"
+      ],
+      "unit": "mmHg",
+      "implies": "sbp",
+      "rule": "the upper number; used directly by the model",
+      "plausible_range": [
+        70,
+        260
+      ]
+    },
+    "total_cholesterol": {
+      "aliases": [
+        "total cholesterol",
+        "cholesterol total",
+        "s. cholesterol"
+      ],
+      "unit": "mg/dL",
+      "implies": null,
+      "plausible_range": [
+        50,
+        500
+      ]
+    },
+    "ldl": {
+      "aliases": [
+        "ldl",
+        "ldl cholesterol",
+        "low density lipoprotein"
+      ],
+      "unit": "mg/dL",
+      "implies": null,
+      "plausible_range": [
+        10,
+        400
+      ]
+    },
+    "creatinine": {
+      "aliases": [
+        "creatinine",
+        "s. creatinine",
+        "serum creatinine"
+      ],
+      "unit": "mg/dL",
+      "implies": null,
+      "plausible_range": [
+        0.2,
+        15.0
+      ]
+    }
+  },
+  "_not_inferred": [
+    "Beta-blockers are listed under antihypertensive but are also used for rate control",
+    "in atrial fibrillation and after myocardial infarction. They therefore set only",
+    "on_htn_meds, never atrial_fib or prevalent_cvd, and the user is asked to confirm.",
+    "",
+    "No drug class sets atrial_fib directly. Anticoagulants and antiarrhythmics are",
+    "strong hints, but warfarin is also given for venous thrombosis and mechanical",
+    "valves, so they raise a question rather than an answer."
+  ]
+}

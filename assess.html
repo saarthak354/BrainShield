@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BrainShield — Stroke Risk Assessment</title>
+<style>
+  :root{
+    --navy:#21295C; --blue:#065A82; --teal:#1C7293; --mint:#6FD6C5;
+    --ink:#1B2430; --muted:#5B6472; --card:#F2F6F8; --white:#FFFFFF;
+    --danger:#B85042; --border:#E1E7EC; --amber:#8A5A00; --amberbg:#FDF2DC;
+    --greenbg:#E4F3EE; --green:#1E7B5C; --redbg:#FBE7E5; --red:#96271C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:Calibri,"Segoe UI",Arial,sans-serif; background:var(--white);
+       color:var(--ink); line-height:1.5;}
+  header{background:var(--navy); color:var(--white); padding:30px 8vw 26px;}
+  header .kicker{color:var(--mint); font-weight:700; letter-spacing:3px; font-size:13px; margin-bottom:8px;}
+  header h1{font-family:Cambria,Georgia,serif; font-size:32px; margin:0 0 8px;}
+  header p{color:#B9D6E8; font-size:15px; margin:0; max-width:780px;}
+  main{max-width:900px; margin:0 auto; padding:28px 6vw 80px;}
+
+  .emergency{background:#FBE7E5; border:1px solid #E8B4AE; color:#8A231A; padding:13px 16px;
+    border-radius:10px; font-size:13.5px; margin-bottom:22px;}
+  .emergency b{display:block; margin-bottom:3px;}
+
+  /* ---- step rail ---- */
+  .rail{display:flex; gap:8px; margin-bottom:28px;}
+  .rail .st{flex:1; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--white); font-size:13px; color:var(--muted); text-align:center;}
+  .rail .st b{display:block; font-size:12px; letter-spacing:1.5px; color:#9AA4B0; margin-bottom:2px;}
+  .rail .st.active{background:var(--navy); border-color:var(--navy); color:var(--white);}
+  .rail .st.active b{color:var(--mint);}
+  .rail .st.done{background:var(--greenbg); border-color:#B9DFD1; color:var(--green);}
+  .rail .st.done b{color:var(--green);}
+  @media (max-width:560px){ .rail .st{font-size:11.5px; padding:8px 6px;} }
+
+  .step{display:none;}
+  .step.active{display:block;}
+  .section{margin-bottom:26px;}
+  .section h2{font-family:Cambria,Georgia,serif; font-size:20px; color:var(--navy); margin:0 0 4px;}
+  .section .sub{color:var(--muted); font-size:13px; margin:0 0 15px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px 22px;}
+  @media (max-width:640px){ .grid{grid-template-columns:1fr;} }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  label{font-size:13.5px; font-weight:700;}
+  .hint{font-size:12px; color:var(--muted); margin-top:-2px;}
+  input[type="number"]{padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    font-size:14.5px; font-family:inherit; width:100%;}
+  input[type="number"]:disabled{background:#F4F6F8; color:#A8B0BA;}
+  .toggle{display:flex; gap:8px;}
+  .toggle button{flex:1; padding:10px 6px; border-radius:8px; border:1px solid var(--border);
+    background:var(--white); color:var(--muted); font-family:inherit; font-size:13.5px;
+    font-weight:700; cursor:pointer;}
+  .toggle button.active{background:var(--teal); border-color:var(--teal); color:var(--white);}
+  .toggle button.unsure.active{background:#8792A6; border-color:#8792A6;}
+
+  .btn{padding:15px; font-size:15.5px; font-weight:700; border-radius:10px; cursor:pointer;
+    font-family:inherit; border:none;}
+  .btn-primary{background:var(--navy); color:var(--white); width:100%;}
+  .btn-primary:hover{background:#161c47;}
+  .btn-primary:disabled{background:#9AA4B0; cursor:not-allowed;}
+  .btn-ghost{background:var(--white); color:var(--muted); border:1px solid var(--border); width:100%;}
+  .btn-row{display:flex; gap:10px; margin-top:8px;}
+
+  /* ---- camera ---- */
+  .cam-wrap{background:var(--card); border-radius:14px; padding:22px; text-align:center;}
+  .cam-stage{position:relative; width:190px; height:190px; margin:0 auto 14px; border-radius:50%;
+    overflow:hidden; background:#11151f; border:3px solid var(--border);}
+  .cam-stage video{width:100%; height:100%; object-fit:cover;}
+  .cam-stage.live{border-color:var(--teal);}
+  .ring{position:absolute; inset:0; border-radius:50%; pointer-events:none;}
+  .countdown{font-family:Cambria,Georgia,serif; font-size:34px; font-weight:700; color:var(--navy);}
+  .cam-status{font-size:13.5px; color:var(--muted); margin-top:4px; min-height:20px;}
+  .wave{width:100%; max-width:420px; height:56px; margin:10px auto 0; display:block;}
+  .howto{text-align:left; max-width:430px; margin:16px auto 0; font-size:13.5px; color:var(--muted);}
+  .howto li{margin-bottom:5px;}
+
+  /* ---- upload ---- */
+  .drop{border:2px dashed var(--border); border-radius:12px; padding:30px 20px; text-align:center;
+    background:var(--card); cursor:pointer;}
+  .drop:hover{border-color:var(--teal);}
+  .drop b{display:block; color:var(--navy); margin-bottom:4px;}
+  .drop span{font-size:13px; color:var(--muted);}
+  .proposal{border:1px solid var(--border); border-radius:10px; padding:14px 16px; margin-top:12px;
+    background:var(--white);}
+  .proposal .p-reason{font-size:12.5px; color:var(--muted); margin-bottom:4px;}
+  .proposal .p-q{font-size:14px; font-weight:700; color:var(--navy); margin-bottom:10px;}
+
+  /* ---- results ---- */
+  .result-card{background:var(--card); border-radius:14px; padding:28px; text-align:center;}
+  .risk-pct{font-family:Cambria,Georgia,serif; font-size:56px; font-weight:700; color:var(--navy); line-height:1.05;}
+  .risk-range{font-family:Cambria,Georgia,serif; font-size:38px; font-weight:700; color:var(--navy);}
+  .risk-label{font-size:14px; color:var(--muted); margin-top:6px;}
+  .risk-band{display:inline-block; margin-top:13px; padding:6px 16px; border-radius:20px;
+    font-size:13px; font-weight:700;}
+  .plainly{margin-top:16px; font-size:14.5px; max-width:560px; margin-left:auto; margin-right:auto;}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:22px;}
+  @media (max-width:560px){ .compare{grid-template-columns:1fr;} }
+  .compare .box{background:var(--white); border:1px solid var(--border); border-radius:10px;
+    padding:15px; text-align:center;}
+  .compare .box .val{font-family:Cambria,Georgia,serif; font-size:25px; font-weight:700; color:var(--teal);}
+  .compare .box .lbl{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .panel{margin-top:20px; background:var(--white); border:1px solid var(--border);
+    border-radius:12px; padding:19px;}
+  .panel h3{font-family:Cambria,Georgia,serif; font-size:17px; color:var(--navy); margin:0 0 4px;}
+  .panel .psub{font-size:12.5px; color:var(--muted); margin:0 0 13px;}
+  .contrib{display:flex; gap:11px; padding:11px 0; border-top:1px solid var(--border); font-size:13.5px;}
+  .contrib:first-of-type{border-top:none;}
+  .contrib .dot{flex:0 0 9px; height:9px; border-radius:50%; margin-top:6px; background:var(--teal);}
+  .contrib .dot.off{background:#CBD3DA;}
+  .contrib b{color:var(--navy);}
+  .contrib .c-note{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .voi-row{display:flex; gap:11px; padding:10px 0; border-top:1px solid var(--border);}
+  .voi-row:first-of-type{border-top:none;}
+  .voi-bar{flex:0 0 80px; height:8px; background:#E8EDF1; border-radius:4px; margin-top:6px; overflow:hidden;}
+  .voi-bar i{display:block; height:100%; background:var(--teal);}
+  .voi-share{flex:0 0 46px; text-align:right; font-size:13px; font-weight:700; color:var(--teal);}
+  .voi-text{flex:1; font-size:13.5px;}
+  .voi-text .how{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .cf-row{padding:11px 0; border-top:1px solid var(--border); font-size:13.5px;}
+  .cf-row:first-of-type{border-top:none;}
+  .cf-head{display:flex; justify-content:space-between; gap:12px; align-items:baseline;}
+  .cf-head b{color:var(--navy);}
+  .cf-delta{font-family:Cambria,Georgia,serif; font-size:17px; font-weight:700; color:var(--green); white-space:nowrap;}
+  .cf-caveat{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .warnbox{margin-top:16px; background:var(--amberbg); border:1px solid #E9D6B8; color:var(--amber);
+    border-radius:10px; padding:13px 15px; font-size:13px;}
+  .warnbox b{display:block; margin-bottom:3px;}
+  .warnbox.bad{background:var(--redbg); border-color:#E8B4AE; color:var(--red);}
+  .warnbox.good{background:var(--greenbg); border-color:#B9DFD1; color:var(--green);}
+  .model-badge{margin-top:24px; padding:15px 17px; border-radius:10px; background:var(--card);
+    border:1px solid var(--border); font-size:12.5px; color:var(--muted); line-height:1.6;}
+  .model-badge b{color:var(--navy);}
+  .model-badge a{color:var(--teal);}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">BRAINSHIELD</div>
+  <h1>Stroke Risk Assessment</h1>
+  <p>Three steps: answer some questions, let the camera check your pulse rhythm, and
+     optionally photograph your medicines or lab report. Everything runs on your device —
+     no image, video or answer is ever uploaded.</p>
+</header>
+
+<main>
+  <div class="emergency">
+    <b>If symptoms are happening right now, stop and call emergency services.</b>
+    Sudden face drooping, arm weakness or speech difficulty — even if it passes — is an
+    emergency. This tool estimates risk over years, not what is happening today.
+  </div>
+
+  <div class="rail">
+    <div class="st active" id="rail1"><b>STEP 1</b>Your details</div>
+    <div class="st" id="rail2"><b>STEP 2</b>Pulse rhythm check</div>
+    <div class="st" id="rail3"><b>STEP 3</b>Documents <span style="opacity:.7">(optional)</span></div>
+    <div class="st" id="rail4"><b>RESULT</b>Your 5-year risk</div>
+  </div>
+
+  <!-- ================= STEP 1 ================= -->
+  <section class="step active" id="step1">
+    <div class="section">
+      <h2>About you</h2>
+      <p class="sub">Age and sex are required. Everything else can be left as “Not sure” —
+         you’ll get an honest range instead of a made-up number.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="age">Age (years)</label>
+          <input type="number" id="age" min="18" max="110" step="1" />
+          <span class="hint">The model was built on adults aged 55–84.</span>
+        </div>
+        <div class="field">
+          <label>Sex</label>
+          <div class="toggle" data-field="sex">
+            <button type="button" data-value="women">Female</button>
+            <button type="button" data-value="men">Male</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Blood pressure</h2>
+      <div class="grid">
+        <div class="field">
+          <label for="sbp">Systolic blood pressure (upper number, mmHg)</label>
+          <input type="number" id="sbp" min="70" max="260" step="1" />
+          <div class="toggle" data-field="sbp_known" style="margin-top:6px;">
+            <button type="button" data-value="1" class="active">I know it</button>
+            <button type="button" data-value="0" class="unsure">Not sure</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you take blood-pressure medication?</label>
+          <div class="toggle" data-field="on_htn_meds">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Medical history</h2>
+      <div class="grid">
+        <div class="field">
+          <label>Diabetes</label>
+          <div class="toggle" data-field="diabetes">
+            <button type="button" data-value="0">No</button><button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you currently smoke?</label>
+          <div class="toggle" data-field="current_smoker">
+            <button type="button" data-value="0">No</button><button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Cigarettes, bidis or hookah. Any smoking in the past year counts.</span>
+        </div>
+        <div class="field">
+          <label>Do you chew or hold tobacco in your mouth?</label>
+          <div class="toggle" data-field="smokeless_tobacco">
+            <button type="button" data-value="0">No</button><button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Gutkha, khaini, zarda, paan masala, mishri, or paan with tobacco.
+            This carries its own stroke risk and is asked separately from smoking.</span>
+        </div>
+        <div class="field">
+          <label>Existing heart or vascular disease</label>
+          <div class="toggle" data-field="prevalent_cvd">
+            <button type="button" data-value="0">No</button><button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Heart attack, angina, bypass, stent, heart failure, or poor leg circulation.</span>
+        </div>
+        <div class="field">
+          <label>Atrial fibrillation</label>
+          <div class="toggle" data-field="atrial_fib">
+            <button type="button" data-value="0">No</button><button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">An irregular heart rhythm diagnosed on an ECG. Step 2 can help answer this.</span>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="toStep2">Continue to the pulse check →</button>
+  </section>
+
+  <!-- ================= STEP 2 ================= -->
+  <section class="step" id="step2">
+    <div class="section">
+      <h2>Pulse rhythm check</h2>
+      <p class="sub">Your camera measures the pulse in your fingertip for one minute and
+         checks whether the rhythm is regular. This can rule atrial fibrillation out of
+         your estimate — it cannot rule it in.</p>
+
+      <div class="cam-wrap">
+        <div class="cam-stage" id="camStage">
+          <video id="cam" playsinline muted></video>
+        </div>
+        <div class="countdown" id="countdown">60s</div>
+        <div class="cam-status" id="camStatus">Cover the rear camera and flash with your fingertip.</div>
+        <canvas class="wave" id="wave" width="840" height="112"></canvas>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="startCam">Start the 60-second check</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost" id="skipCam">Skip this step</button>
+        </div>
+        <ul class="howto">
+          <li>Use the <b>back</b> camera. Rest the pad of your finger over both the lens and the flash.</li>
+          <li>Press <b>gently</b> — hard pressure cuts off the blood flow being measured.</li>
+          <li>Sit still and rest your hand on a table. Movement is the main cause of a failed reading.</li>
+          <li>If your phone refuses camera access, or it isn’t working, just skip — the rest still works.</li>
+        </ul>
+      </div>
+      <div id="camResult"></div>
+      <div class="btn-row" id="camNextRow" style="display:none;">
+        <button class="btn btn-primary" id="toStep3">Continue →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STEP 3 ================= -->
+  <section class="step" id="step3">
+    <div class="section">
+      <h2>Your medicines or lab report <span style="font-weight:400;color:var(--muted);font-size:15px;">— optional</span></h2>
+      <p class="sub">Photograph a medicine box or a blood-test report. The text is read on
+         your device and never uploaded. Anything found is shown to you as a question —
+         nothing is filled in without your say-so.</p>
+
+      <div class="drop" id="drop">
+        <b>Tap to photograph or choose an image</b>
+        <span>Medicine box, strip, prescription, or lab report</span>
+        <input type="file" id="fileInput" accept="image/*" capture="environment" style="display:none;" />
+      </div>
+      <div class="cam-status" id="ocrStatus"></div>
+      <div id="ocrResult"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="toResults">See my 5-year risk →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= RESULTS ================= -->
+  <section class="step" id="step4">
+    <div class="result-card">
+      <div id="riskDisplay"></div>
+      <div class="risk-label" id="riskLabel"></div>
+      <div class="risk-band" id="riskBand"></div>
+      <div class="plainly" id="plainly"></div>
+      <div class="compare">
+        <div class="box"><div class="val" id="optimalVal">—</div>
+          <div class="lbl">The floor for your age: someone your age and sex with no risk factors and healthy blood pressure</div></div>
+        <div class="box"><div class="val" id="cohortVal">—</div>
+          <div class="lbl">The average person of your sex in the study population (aged 55+)</div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>What each step contributed</h3>
+      <p class="psub">Which of the three inputs actually changed your number, and how.</p>
+      <div id="contribList"></div>
+    </div>
+
+    <div class="panel" id="voiPanel" style="display:none;">
+      <h3>What would sharpen this estimate</h3>
+      <p class="psub">Ranked by how much of the remaining uncertainty each one accounts for.</p>
+      <div id="voiList"></div>
+    </div>
+
+    <div class="panel" id="cfPanel" style="display:none;">
+      <h3>What would change this number</h3>
+      <p class="psub">Modelled effects of changing one factor, holding the rest fixed.
+         These are associations from a cohort study, not guaranteed personal outcomes.</p>
+      <div id="cfList"></div>
+    </div>
+
+    <div id="warnings"></div>
+    <div class="model-badge" id="modelBadge"></div>
+    <div class="btn-row"><button class="btn btn-ghost" id="restart">Start again</button></div>
+  </section>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.0/tesseract.min.js"></script>
+<script>
+window.RISK_MODEL = {"_generated_by": "src/risk/export_risk_model.py", "citation": {"paper": "Dufouil C, Beiser A, McLure LA, et al. Revised Framingham Stroke Risk Profile to Reflect Temporal Trends. Circulation. 2017;135(12):1145-1159.", "doi": "10.1161/CIRCULATIONAHA.115.021275", "pmid": "28159800", "pmcid": "PMC5504355", "open_access_full_text": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5504355/"}, "applicability": {"derived_age_range": [55, 84], "note": "Both coefficient sets are derived exclusively in adults aged 55 and over, stroke-free at baseline. Applying them below age 55 is EXTRAPOLATION and must be labelled as such in any output. See fsrp.applicability().", "requires_stroke_free_at_baseline": true, "outcome": "First incident stroke (ischemic or hemorrhagic), WHO definition, adjudicated."}, "known_limitations": ["Discrimination is modest: published c-statistic 0.62-0.78 depending on cohort and sex.", "Calibration is significantly worse in Black participants (Table 5).", "Both cohorts are US-based. Absolute risk will not transport to other countries without recalibrating S0 to local stroke incidence - see recalibrate.py.", "ECG-LVH was dropped from the revised model and is not an input.", "Cholesterol, BMI, physical activity and diet are NOT in this model. Their effects are largely mediated through SBP, diabetes and prevalent CVD, which are included."], "horizon_years": 5, "default_set": "REGARDS_all", "adjunct_terms": {"_README": ["Risk factors NOT in the source cohort model, added as extra terms in the linear", "predictor using published, covariate-ADJUSTED hazard ratios. This is the standard", "way a validated equation is extended (the same approach SCORE2 uses for regional", "recalibration), and it is only defensible when three things hold:", "  1. the HR comes from a meta-analysis adjusted for the same covariates the base", "     model already contains, so the effect is not double-counted;", "  2. the factor is genuinely absent from the base cohort, so there is nothing to", "     double-count in the first place;", "  3. the centering mean uses the prevalence of the population being scored.", "Each term below states which of these it satisfies and which it assumes."], "smokeless_tobacco": {"field": "smokeless_tobacco", "label": "Chewed or held tobacco (gutkha, khaini, zarda, paan masala, mishri, betel quid with tobacco)", "hazard_ratio": 1.35, "ci": [1.2, 1.5], "source": "Pooled RR for stroke in chewing-tobacco users vs non-chewers. Association of smokeless tobacco and cerebrovascular accident: a systematic review and meta-analysis of global data. J Public Health (Oxf). 2020;42(2):e150. Overall smokeless-tobacco RR was 1.17 (1.04-1.30); the chewing-tobacco subgroup, which is the dominant Indian form, was 1.35 (1.20-1.50).", "why_needed": ["The base model asks only about SMOKING. In India that misses a very large group:", "GATS-2 (2016-17) found 29.6% of men and 12.8% of women currently use smokeless", "tobacco. Those users currently score as zero tobacco risk.", "The smokeless-tobacco-attributable fraction of fatal stroke is highest in India,", "at 14.8% (same meta-analysis)."], "why_separate_from_smoking": ["Its effect is materially smaller than smoking (REGARDS smoking HR is 2.00 in men,", "1.77 in women). Folding smokeless users into the smoking question would", "OVERESTIMATE their risk by roughly 50%. It is a separate question with its own", "coefficient."], "means": {"_source": "GATS-2 India 2016-17, current smokeless tobacco use", "men": 0.296, "women": 0.128, "confidence": "high - nationally representative survey, n>74,000"}, "assumptions_and_limits": ["ASSUMED INDEPENDENT of the base model's covariates. The base cohorts (REGARDS,", "Framingham) are US populations where smokeless tobacco use is uncommon and was", "not a modelled covariate, so there is little to double-count - condition 2 holds.", "The meta-analysis pools studies with heterogeneous adjustment, so condition 1 is", "only partly satisfied. Treat this term as the least certain part of the estimate.", "Dual users (smoking AND chewing) get both terms, which may overstate the combined", "effect if the two share a mechanism."], "centering": {"centre_at": 0, "why": ["The adjunct term is centred at ZERO, not at Indian prevalence.", "S0 is anchored to the base cohort (REGARDS), where smokeless tobacco use is", "uncommon and was not a covariate - so NON-USE is already the reference level that", "S0 was calibrated against. A non-user therefore gets no adjustment, and a user gets", "+ln(1.35).", "Centring on Indian prevalence instead would hand every Indian non-user a discount", "below the US baseline, which nothing in the evidence supports.", "The 'means' block above is used ONLY as a prior when the user answers 'not sure'."]}}}, "population_priors": {"_README": ["Priors used ONLY to propagate uncertainty when a user answers 'not sure'. They do", "not change the coefficients, and they do not affect anyone who answers every", "question. Selecting the wrong population makes unknown-input ranges wrong, not the", "point estimates."], "US_REGARDS": {"label": "US, REGARDS cohort (default)", "note": "Read from the coefficient set's own means block; see uncertainty.py _priors()."}, "India": {"label": "India, national surveys", "_WARNING": ["These are assembled from several national surveys, not one cohort, and one of them", "is DERIVED rather than measured. Check each before relying on it."], "current_smoking": {"men": 0.19, "women": 0.02, "source": "GATS-2 India 2016-17, current smoking", "confidence": "high"}, "smokeless_tobacco": {"men": 0.296, "women": 0.128, "source": "GATS-2 India 2016-17, current smokeless tobacco use", "confidence": "high"}, "diabetes": {"men": 0.119, "women": 0.078, "source": "NFHS-5 (2019-21), highest age band reported: men >50y 11.9%, women 45-49y 7.8%", "confidence": "medium - NFHS-5 likely UNDERESTIMATES relative to ICMR-INDIAB measured prevalence (~11-12% nationally, higher in urban areas). Revise upward if INDIAB age/sex bands are available."}, "htn_treatment": {"men": 0.132, "women": 0.137, "source": "DERIVED, not measured: hypertension prevalence (NFHS-5: men >50y 41.4%, women 45-49y 31.2%) multiplied by awareness (NFHS-5: men 32%, women 44%).", "confidence": "LOW - this is the weakest number in the file. Awareness is an upper bound on treatment, so the true figure is lower still. What matters is the direction, which is not in doubt: far fewer Indian adults are on BP medication than the ~49-55% in REGARDS."}, "_the_important_consequence": ["Only 32% of hypertensive Indian men and 44% of women are even AWARE of it, against", "roughly half of REGARDS participants being on treatment. So in India 'I don't know", "my blood pressure' is the normal case, not the exception.", "That makes the uncertainty-propagation and 'go measure this first' features more", "valuable here than in the population the model was built on, not less."]}}, "sets": {"REGARDS_all": {"label": "REGARDS, all participants, age 55+", "sexes": {"men": {"betas": {"age": 0.05423242908253617, "current_smoking": 0.6931471805599453, "prevalent_cvd": 0.2700271372130602, "atrial_fib": 0.4824261492442928, "age_ge65": 0.29266961396282004, "dm_age_lt65": 0.6626879730752367, "dm_age_ge65": 0.13976194237515863, "htn_treatment": 0.23111172096338664, "sbp_untreated": 0.00861776962410524, "sbp_treated": 0.004879016416943205}, "M": 5.042969936442757, "S0_5yr": 0.9730950186394897, "cohort_avg_5yr_risk": 0.031, "priors": {"smokeless_tobacco": 0.296, "on_htn_meds": 0.492, "diabetes": 0.227, "current_smoker": 0.131, "prevalent_cvd": 0.241, "atrial_fib": 0.088, "sbp_untreated_mean": 126, "sbp_treated_mean": 132, "sbp_sd": 17.0}}, "women": {"betas": {"age": 0.060431596685332954, "current_smoking": 0.5709795465857378, "prevalent_cvd": 0.41871033485818504, "atrial_fib": 0.45107561936021673, "age_ge65": 0.36464311358790924, "dm_age_lt65": 0.5068176023684519, "dm_age_ge65": 0.10436001532424286, "htn_treatment": 0.17395330712343798, "sbp_untreated": 0.014842000511827321, "sbp_treated": 0.016551443847757332}, "M": 6.526487020616369, "S0_5yr": 0.9780347307629503, "cohort_avg_5yr_risk": 0.027, "priors": {"smokeless_tobacco": 0.128, "on_htn_meds": 0.548, "diabetes": 0.214, "current_smoker": 0.133, "prevalent_cvd": 0.128, "atrial_fib": 0.085, "sbp_untreated_mean": 123, "sbp_treated_mean": 131, "sbp_sd": 17.0}}}}, "NewFHS": {"label": "Contemporary Framingham (the published 'new FSRP')", "sexes": {"men": {"betas": {"age": 0.0494696241836107, "current_smoking": 0.47000362924573563, "prevalent_cvd": 0.45107561936021673, "atrial_fib": 0.0769610411361284, "age_ge65": 0.4574248470388755, "dm_age_lt65": 1.3532545070416904, "dm_age_ge65": 0.34358970439007686, "htn_treatment": 0.8241754429663494, "sbp_untreated": 0.02700271372130602, "sbp_treated": 0.009531017980432493}, "M": 6.76825283316858, "S0_5yr": 0.9824862259607645, "cohort_avg_5yr_risk": 0.029, "priors": {"smokeless_tobacco": 0.296, "on_htn_meds": 0.421, "diabetes": 0.151, "current_smoker": 0.124, "prevalent_cvd": 0.18, "atrial_fib": 0.071, "sbp_untreated_mean": 132, "sbp_treated_mean": 139, "sbp_sd": 17.0}}, "women": {"betas": {"age": 0.08796267475025636, "current_smoking": 0.5128236264286637, "prevalent_cvd": -0.030459207484708574, "atrial_fib": 1.205970806988609, "age_ge65": 0.3987761199573678, "dm_age_lt65": 1.0715836162801904, "dm_age_ge65": 0.06765864847381486, "htn_treatment": 0.131028262406404, "sbp_untreated": 0.011332868530700327, "sbp_treated": 0.0173953307123438}, "M": 8.271540094895453, "S0_5yr": 0.9886358524148506, "cohort_avg_5yr_risk": 0.022, "priors": {"smokeless_tobacco": 0.128, "on_htn_meds": 0.397, "diabetes": 0.089, "current_smoker": 0.138, "prevalent_cvd": 0.101, "atrial_fib": 0.032, "sbp_untreated_mean": 129, "sbp_treated_mean": 144, "sbp_sd": 17.0}}}, "warning": ["Provided for reproducibility of the published new FSRP, NOT recommended as the", "shipping default. Derived on only ~60-62 five-year events, which makes several", "coefficients unstable and, in two cases, clinically misleading:", "  - men, atrial fibrillation: HR 1.08 (0.61-1.94), i.e. null, when AF is one of", "    the strongest established stroke risk factors.", "  - women, prevalent CVD: HR 0.97 (0.61-1.56), i.e. protective, which is not credible.", "Also: Table 5 shows this model miscalibrates significantly outside Framingham", "(calibration chi-square 102.4 in REGARDS Black women, 90.3 in REGARDS women overall)."]}}};
+window.AF_MODEL = {"_source": "MIT-BIH Atrial Fibrillation Database (PhysioNet afdb), 25 records", "_validation": "leave-one-record-out cross-validation", "feature_names": ["rmssd_norm", "cv", "prr50", "prr70", "shannon", "sampen", "sd1_sd2", "hr"], "coef": [1.3821884384182197, -0.7022809529373184, 6.213386629073932, -1.398281121089323, 1.9874372370570004, 1.1172451100683438, -5.810364466966805, 1.964563829174299], "intercept": -3.866954175180667, "mean": [0.17306268078384818, 0.12578243665548322, 0.36579971465444633, 0.31856146202616165, 0.7777180552379925, 1.7693348223862044, 0.966842809370249, 81.54122946372382], "scale": [0.13593303717179836, 0.09360771676226713, 0.33525923800990654, 0.30913505913756345, 0.17799654476861332, 1.3760210849862806, 1.0515983617167752, 18.61768886792899], "threshold_rule_out": 0.6091149925853044, "window_seconds": 60, "min_beats": 20, "performance": {"auroc_record_held_out": 0.9902835571130713, "sensitivity_at_threshold": 0.9498426799925968, "specificity_at_threshold": 0.9739182956292555, "ppv_npv_by_prevalence": {"0.02": {"ppv": 0.4263502042837943, "npv": 0.9989500720396393}, "0.05": {"ppv": 0.6571509093140242, "npv": 0.9972967724089085}, "0.1": {"ppv": 0.8018405410986718, "npv": 0.994310275773822}}, "per_record_auroc_min": 0.9309813645927262, "per_record_auroc_max": 1.0, "noise_curve": [{"condition": "ECG ground truth (no degradation)", "jitter_ms": 0, "miss_rate": 0.0, "fps": null, "auroc": 0.9902835571130713, "sens": 0.9498426799925968, "spec": 0.9739182956292555}, {"condition": "30 fps grid only (no interpolation)", "jitter_ms": 0, "miss_rate": 0.0, "fps": 30, "auroc": 0.9918067443817473, "sens": 0.9500277623542477, "spec": 0.9688134848734421}, {"condition": "30 fps + 8 ms jitter (parabolic interp)", "jitter_ms": 8, "miss_rate": 0.0, "fps": null, "auroc": 0.9899993783159594, "sens": 0.9502128447158986, "spec": 0.9694140903849322}, {"condition": "60 fps + 5 ms jitter", "jitter_ms": 5, "miss_rate": 0.0, "fps": null, "auroc": 0.9906245026057626, "sens": 0.9496575976309458, "spec": 0.973093185437373}, {"condition": "15 ms jitter", "jitter_ms": 15, "miss_rate": 0.0, "fps": null, "auroc": 0.9880203863581851, "sens": 0.9501203035350732, "spec": 0.9568392729668882}, {"condition": "25 ms jitter", "jitter_ms": 25, "miss_rate": 0.0, "fps": null, "auroc": 0.9826302358074491, "sens": 0.9500277623542477, "spec": 0.9249945091148694}, {"condition": "40 ms jitter", "jitter_ms": 40, "miss_rate": 0.0, "fps": null, "auroc": 0.9699239282534804, "sens": 0.9500277623542477, "spec": 0.8738402415591545}, {"condition": "8 ms jitter + 2% missed beats", "jitter_ms": 8, "miss_rate": 0.02, "fps": null, "auroc": 0.9885522114028994, "sens": 0.9496482784154017, "spec": 0.961137336699967}, {"condition": "8 ms jitter + 5% missed beats", "jitter_ms": 8, "miss_rate": 0.05, "fps": null, "auroc": 0.9899543454438577, "sens": 0.950309984269455, "spec": 0.9665623455773349}, {"condition": "25 ms jitter + 5% missed beats", "jitter_ms": 25, "miss_rate": 0.05, "fps": null, "auroc": 0.9830003411457576, "sens": 0.9499398537984639, "spec": 0.9264261791028386}]}};
+window.MEDICATIONS = {"_README": ["Maps medication names found by OCR to the risk model's input variables.", "Brand names are India-weighted alongside internationals, since a photographed", "box in India will show the brand far more prominently than the generic.", "", "'implies' names a Profile field. 'confidence' is how safely that inference holds:", "  high   - the drug is essentially only used for that condition", "  medium - common for it, but has other indications", "  signal - does NOT set the field; raises a question for the user to confirm", "", "Nothing here ever sets a model variable on its own. OCR proposes, the user confirms."], "classes": {"antihypertensive": {"implies": "on_htn_meds", "confidence": "high", "prompt": "This looks like a blood-pressure medication. Do you take it regularly?", "drugs": {"amlodipine": ["amlokind", "stamlo", "amlodac", "norvasc", "amlong", "amlopres"], "telmisartan": ["telma", "telsartan", "micardis", "telvas", "telmikind"], "losartan": ["losar", "cozaar", "repace", "losacar", "tozaar"], "olmesartan": ["olmezest", "benicar", "olmat", "olmesar"], "ramipril": ["cardace", "altace", "ramistar", "ramipres"], "enalapril": ["envas", "vasotec", "enam"], "lisinopril": ["zestril", "prinivil", "listril", "lisoril"], "atenolol": ["tenormin", "aten", "atecard"], "metoprolol": ["metolar", "lopressor", "betaloc", "metpure", "starpress"], "bisoprolol": ["concor", "corbis", "bisoheart"], "nebivolol": ["nebicard", "nodon", "nebistar"], "hydrochlorothiazide": ["hctz", "hydrazide", "aquazide"], "chlorthalidone": ["hygroton", "ctd", "chlorpres"], "cilnidipine": ["cilacar", "cilnipine", "nexovas"], "torsemide": ["dytor", "demadex"], "indapamide": ["natrilix", "lorvas"]}}, "antidiabetic": {"implies": "diabetes", "confidence": "high", "prompt": "This looks like a diabetes medication. Have you been diagnosed with diabetes?", "drugs": {"metformin": ["glycomet", "glucophage", "obimet", "carbophage", "gluconorm", "walaphage"], "glimepiride": ["amaryl", "glimestar", "zoryl", "glimy", "glimepride"], "gliclazide": ["diamicron", "reclide", "glizid", "dianorm"], "glipizide": ["glynase", "glucotrol"], "sitagliptin": ["januvia", "istavel", "sitara", "zituvia"], "vildagliptin": ["galvus", "jalra", "zomelis", "vysov"], "teneligliptin": ["tenepure", "zita", "teneza"], "linagliptin": ["trajenta", "ondero"], "pioglitazone": ["pioz", "actos", "piozone"], "insulin": ["lantus", "humalog", "novorapid", "mixtard", "huminsulin", "basalog", "glaritus", "actrapid", "tresiba", "ryzodeg"], "voglibose": ["volix", "vogs"], "acarbose": ["glucobay"]}}, "sglt2_dual_use": {"implies": "diabetes", "confidence": "medium", "prompt": "This is used for diabetes and also for heart failure. Have you been diagnosed with diabetes?", "drugs": {"empagliflozin": ["jardiance", "empaglyn", "gibtulio"], "dapagliflozin": ["forxiga", "dapanorm", "sugafit", "oxra"]}}, "anticoagulant": {"implies": "atrial_fib", "confidence": "signal", "prompt": "Blood thinners like this are most often prescribed for atrial fibrillation, though also for clots or a heart valve. Were you prescribed it for an irregular heartbeat?", "drugs": {"warfarin": ["coumadin", "warf", "uniwarfin", "sofarin"], "acenocoumarol": ["acitrom", "sintrom", "nicoumalone"], "apixaban": ["eliquis", "apixabid", "apixita"], "rivaroxaban": ["xarelto", "rivaflo", "riva"], "dabigatran": ["pradaxa", "dabigat"], "edoxaban": ["lixiana", "savaysa"]}}, "antiarrhythmic": {"implies": "atrial_fib", "confidence": "signal", "prompt": "This medication controls heart rhythm. Have you been told you have an irregular heartbeat or atrial fibrillation?", "drugs": {"amiodarone": ["cordarone", "tachyra", "amiodar", "duron"], "flecainide": ["tambocor", "flecarite"], "propafenone": ["rythmol", "propafen"], "sotalol": ["sotalar", "betapace"], "digoxin": ["lanoxin", "digoxin", "digitek"], "dronedarone": ["multaq"]}}, "cardiovascular": {"implies": "prevalent_cvd", "confidence": "medium", "prompt": "This is usually prescribed after a heart problem. Have you had a heart attack, angina, stent, bypass, or heart failure?", "drugs": {"clopidogrel": ["plavix", "clopilet", "deplatt", "clopivas", "ceruvin"], "ticagrelor": ["brilinta", "axcer", "ticaflo"], "prasugrel": ["prasita", "effient", "prasudoc"], "isosorbide": ["sorbitrate", "angispan", "monotrate", "imdur", "isordil"], "nitroglycerin": ["nitrocontin", "glyceryl trinitrate", "gtn", "nitrostat"], "ranolazine": ["ranexa", "ranozex"], "ivabradine": ["ivabrad", "procoralan", "corlanor"], "sacubitril": ["vymada", "entresto", "azmarda"]}}, "statin": {"implies": "prevalent_cvd", "confidence": "signal", "prompt": "Statins are prescribed for high cholesterol alone, and also after a heart problem. Have you had a heart attack, angina, stent or bypass?", "drugs": {"atorvastatin": ["lipitor", "atorva", "storvas", "aztor", "tonact", "atocor"], "rosuvastatin": ["crestor", "rosuvas", "rozavel", "rosulip"], "simvastatin": ["zocor", "simvotin"], "pravastatin": ["pravachol"], "ezetimibe": ["zetia", "ezedoc"]}}, "cardiac_aspirin": {"implies": "prevalent_cvd", "confidence": "signal", "prompt": "Low-dose aspirin is sometimes taken after a heart problem and sometimes as prevention. Were you prescribed it by a doctor for your heart?", "drugs": {"aspirin": ["ecosprin", "disprin", "aspicot", "loprin", "delisprin", "acetylsalicylic"]}}}, "lab_tests": {"hba1c": {"aliases": ["hba1c", "hb a1c", "glycosylated haemoglobin", "glycosylated hemoglobin", "glycated haemoglobin", "glycated hemoglobin", "a1c"], "unit": "%", "implies": "diabetes", "rule": ">= 6.5 indicates diabetes; 5.7-6.4 is prediabetes", "threshold": 6.5, "plausible_range": [3.0, 20.0]}, "fasting_glucose": {"aliases": ["fasting blood sugar", "fasting glucose", "fbs", "fasting plasma glucose", "fpg"], "unit": "mg/dL", "implies": "diabetes", "rule": ">= 126 mg/dL on two occasions indicates diabetes", "threshold": 126, "plausible_range": [40, 600]}, "systolic_bp": {"aliases": ["blood pressure", "bp", "systolic"], "unit": "mmHg", "implies": "sbp", "rule": "the upper number; used directly by the model", "plausible_range": [70, 260]}, "total_cholesterol": {"aliases": ["total cholesterol", "cholesterol total", "s. cholesterol"], "unit": "mg/dL", "implies": null, "plausible_range": [50, 500]}, "ldl": {"aliases": ["ldl", "ldl cholesterol", "low density lipoprotein"], "unit": "mg/dL", "implies": null, "plausible_range": [10, 400]}, "creatinine": {"aliases": ["creatinine", "s. creatinine", "serum creatinine"], "unit": "mg/dL", "implies": null, "plausible_range": [0.2, 15.0]}}, "_not_inferred": ["Beta-blockers are listed under antihypertensive but are also used for rate control", "in atrial fibrillation and after myocardial infarction. They therefore set only", "on_htn_meds, never atrial_fib or prevalent_cvd, and the user is asked to confirm.", "", "No drug class sets atrial_fib directly. Anticoagulants and antiarrhythmics are", "strong hints, but warfarin is also given for venous thrombosis and mechanical", "valves, so they raise a question rather than an answer."]};
+/*
+ * BrainShield — 5-year absolute stroke risk, client side.
+ *
+ * Mirrors src/risk/fsrp.py and src/risk/uncertainty.py exactly. Parity is enforced by
+ * tests/test_risk_parity.js against a fixture of Python-computed values, so this file
+ * cannot drift from the Python without the test suite failing.
+ *
+ * Model:  risk(t|x) = 1 - S0(t) ^ exp(LP(x) - M)
+ * All constants come from RISK_MODEL (generated by src/risk/export_risk_model.py from
+ * published cohort tables; see src/risk/coefficients.json for per-parameter sources).
+ */
+(function (root) {
+  "use strict";
+
+  var UNCERTAIN_FIELDS = ["sbp", "on_htn_meds", "diabetes", "atrial_fib",
+                          "prevalent_cvd", "current_smoker", "smokeless_tobacco"];
+
+  function getModel() {
+    var M = root.RISK_MODEL;
+    if (!M) throw new Error("RISK_MODEL not loaded");
+    return M;
+  }
+
+  function setFor(setName, sex) {
+    var M = getModel();
+    var s = M.sets[setName || M.default_set];
+    if (!s) throw new Error("unknown coefficient set: " + setName);
+    var e = s.sexes[sex];
+    if (!e) throw new Error("sex must be 'men' or 'women', got " + sex);
+    return e;
+  }
+
+  /* ---- linear predictor -------------------------------------------------- */
+  function linearPredictor(p, setName) {
+    var e = setFor(setName, p.sex), b = e.betas;
+    var lp = b.age * p.age;
+    if (p.age >= 65) lp += b.age_ge65;
+    if (p.current_smoker) lp += b.current_smoking;
+    if (p.prevalent_cvd) lp += b.prevalent_cvd;
+    if (p.atrial_fib) lp += b.atrial_fib;
+    if (p.diabetes) lp += (p.age >= 65) ? b.dm_age_ge65 : b.dm_age_lt65;
+    if (p.on_htn_meds) lp += b.htn_treatment + b.sbp_treated * p.sbp;
+    else lp += b.sbp_untreated * p.sbp;
+    return lp + adjunctLP(p);
+  }
+
+  /* Extra terms for factors absent from the source cohort model.
+     Centred at ZERO, not at population prevalence: smokeless tobacco use was
+     negligible in the base cohort, so non-use already is the reference level S0 was
+     calibrated against. A user gets +ln(HR); a non-user gets nothing. */
+  function adjunctLP(p) {
+    var adj = getModel().adjunct_terms;
+    var lp = 0;
+    if (adj && adj.smokeless_tobacco && p.smokeless_tobacco) {
+      lp += Math.log(adj.smokeless_tobacco.hazard_ratio);
+    }
+    return lp;
+  }
+
+  function risk(p, setName) {
+    var e = setFor(setName, p.sex);
+    return 1 - Math.pow(e.S0_5yr, Math.exp(linearPredictor(p, setName) - e.M));
+  }
+
+  /* ---- applicability ----------------------------------------------------- */
+  function applicability(p) {
+    var M = getModel(), r = M.applicability.derived_age_range;
+    var notes = [], status = "in_range";
+    if (p.age < r[0]) {
+      status = "extrapolation";
+      notes.push("Age " + Math.round(p.age) + " is below " + r[0] + ", the youngest age this "
+        + "model was derived on. Read the estimate as a rough indication of direction, "
+        + "not as a calibrated probability.");
+    } else if (p.age > r[1]) {
+      status = "extrapolation";
+      notes.push("Age " + Math.round(p.age) + " is above the derivation range (max " + r[1] + ").");
+    }
+    if (p.sbp > 180) {
+      notes.push("A systolic blood pressure above 180 mmHg needs medical attention in its "
+        + "own right, separately from any 5-year estimate.");
+    }
+    return { status: status, notes: notes, derived_age_range: r };
+  }
+
+  /* ---- deterministic RNG so results are reproducible --------------------- */
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(rand) {   // Box-Muller
+    var u = 0, v = 0;
+    while (u === 0) u = rand();
+    while (v === 0) v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  /* ---- uncertainty propagation ------------------------------------------- */
+  function unknownsOf(p) {
+    return UNCERTAIN_FIELDS.filter(function (f) {
+      return p[f] === null || p[f] === undefined;
+    });
+  }
+
+  function sampleRisks(p, n, seed, setName) {
+    var e = setFor(setName, p.sex), b = e.betas, pr = e.priors;
+    var rand = mulberry32(seed), out = new Float64Array(n);
+    var ge65 = p.age >= 65;
+    var adjT = getModel().adjunct_terms;
+    var adjHR = (adjT && adjT.smokeless_tobacco) ? adjT.smokeless_tobacco.hazard_ratio : null;
+
+    for (var i = 0; i < n; i++) {
+      var treated = (p.on_htn_meds === null || p.on_htn_meds === undefined)
+        ? (rand() < pr.on_htn_meds) : !!p.on_htn_meds;
+      var dm = (p.diabetes === null || p.diabetes === undefined)
+        ? (rand() < pr.diabetes) : !!p.diabetes;
+      var smk = (p.current_smoker === null || p.current_smoker === undefined)
+        ? (rand() < pr.current_smoker) : !!p.current_smoker;
+      var cvd = (p.prevalent_cvd === null || p.prevalent_cvd === undefined)
+        ? (rand() < pr.prevalent_cvd) : !!p.prevalent_cvd;
+      var af = (p.atrial_fib === null || p.atrial_fib === undefined)
+        ? (rand() < pr.atrial_fib) : !!p.atrial_fib;
+      var slt = (p.smokeless_tobacco === null || p.smokeless_tobacco === undefined)
+        ? (rand() < (pr.smokeless_tobacco || 0)) : !!p.smokeless_tobacco;
+
+      var sbp;
+      if (p.sbp === null || p.sbp === undefined) {
+        var mean = treated ? pr.sbp_treated_mean : pr.sbp_untreated_mean;
+        sbp = Math.min(240, Math.max(80, mean + pr.sbp_sd * gauss(rand)));
+      } else sbp = p.sbp;
+
+      var lp = b.age * p.age + (ge65 ? b.age_ge65 : 0);
+      if (smk) lp += b.current_smoking;
+      if (cvd) lp += b.prevalent_cvd;
+      if (af) lp += b.atrial_fib;
+      if (dm) lp += ge65 ? b.dm_age_ge65 : b.dm_age_lt65;
+      if (treated) lp += b.htn_treatment + b.sbp_treated * sbp;
+      else lp += b.sbp_untreated * sbp;
+      if (slt && adjHR) lp += Math.log(adjHR);
+
+      out[i] = 1 - Math.pow(e.S0_5yr, Math.exp(lp - e.M));
+    }
+    return out;
+  }
+
+  function pct(sorted, q) {
+    var i = (sorted.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i);
+    return lo === hi ? sorted[lo] : sorted[lo] + (i - lo) * (sorted[hi] - sorted[lo]);
+  }
+  function variance(a) {
+    var m = 0, i;
+    for (i = 0; i < a.length; i++) m += a[i];
+    m /= a.length;
+    var v = 0;
+    for (i = 0; i < a.length; i++) v += (a[i] - m) * (a[i] - m);
+    return v / a.length;
+  }
+
+  var LABELS = {
+    sbp: "your systolic blood pressure",
+    on_htn_meds: "whether you take blood-pressure medication",
+    diabetes: "whether you have diabetes",
+    atrial_fib: "whether you have atrial fibrillation",
+    prevalent_cvd: "whether you have existing heart or vascular disease",
+    current_smoker: "whether you currently smoke",
+    smokeless_tobacco: "whether you chew or hold tobacco (gutkha, khaini, zarda, paan masala)"
+  };
+  var HOWTO = {
+    sbp: "A pharmacy BP machine, a clinic, or a home cuff. Take it twice, seated, and average.",
+    on_htn_meds: "Check your prescriptions for amlodipine, lisinopril, losartan, ramipril, "
+               + "telmisartan, a thiazide, or similar.",
+    diabetes: "A fasting glucose or HbA1c test.",
+    atrial_fib: "Requires an ECG. If you have had palpitations or an irregular pulse, ask a "
+              + "doctor — untreated AF is one of the most treatable stroke risks there is.",
+    prevalent_cvd: "A prior heart attack, angina, bypass, stent, heart failure or peripheral "
+                 + "artery disease all count.",
+    current_smoker: "Any smoking in the past year counts.",
+    smokeless_tobacco: "Gutkha, khaini, zarda, paan masala, mishri, or betel quid (paan) with "
+                     + "tobacco \u2014 chewed or held in the mouth rather than smoked."
+  };
+
+  /* First-order Sobol index: share of output variance each unknown explains. */
+  function valueOfInformation(p, n, seed, setName) {
+    var e = setFor(setName, p.sex), pr = e.priors;
+    var base = sampleRisks(p, n, seed, setName);
+    var baseVar = variance(base);
+    var sortedBase = Array.prototype.slice.call(base).sort(function (a, b) { return a - b; });
+    var baseW = pct(sortedBase, 0.9) - pct(sortedBase, 0.1);
+
+    return unknownsOf(p).map(function (field) {
+      var expVar, expW;
+      if (field === "sbp") {
+        var rand = mulberry32(seed + 17);
+        var centre = (p.on_htn_meds === null || p.on_htn_meds === undefined)
+          ? pr.on_htn_meds * pr.sbp_treated_mean + (1 - pr.on_htn_meds) * pr.sbp_untreated_mean
+          : (p.on_htn_meds ? pr.sbp_treated_mean : pr.sbp_untreated_mean);
+        var vs = 0, ws = 0, K = 16;
+        for (var k = 0; k < K; k++) {
+          var c = Math.min(240, Math.max(80, centre + pr.sbp_sd * gauss(rand)));
+          var q = Object.assign({}, p); q.sbp = c;
+          var r = sampleRisks(q, Math.max(2000, n / 8 | 0), seed + 23, setName);
+          vs += variance(r);
+          var sr = Array.prototype.slice.call(r).sort(function (a, b) { return a - b; });
+          ws += pct(sr, 0.9) - pct(sr, 0.1);
+        }
+        expVar = vs / K; expW = ws / K;
+      } else {
+        var pt = pr[field];
+        var qt = Object.assign({}, p); qt[field] = true;
+        var qf = Object.assign({}, p); qf[field] = false;
+        var rt = sampleRisks(qt, n, seed + 4, setName);
+        var rf = sampleRisks(qf, n, seed + 5, setName);
+        expVar = pt * variance(rt) + (1 - pt) * variance(rf);
+        var st = Array.prototype.slice.call(rt).sort(function (a, b) { return a - b; });
+        var sf = Array.prototype.slice.call(rf).sort(function (a, b) { return a - b; });
+        expW = pt * (pct(st, 0.9) - pct(st, 0.1)) + (1 - pt) * (pct(sf, 0.9) - pct(sf, 0.1));
+      }
+      return {
+        field: field,
+        label: LABELS[field],
+        how_to_find_out: HOWTO[field],
+        variance_share: baseVar > 0 ? Math.max(0, (baseVar - expVar) / baseVar) : 0,
+        current_width_pct: 100 * baseW,
+        expected_width_pct: 100 * expW
+      };
+    }).sort(function (a, b) { return b.variance_share - a.variance_share; });
+  }
+
+  function estimate(p, opts) {
+    opts = opts || {};
+    var n = opts.n || 20000, seed = opts.seed || 11, setName = opts.set;
+    var unk = unknownsOf(p);
+    var risks = sampleRisks(p, n, seed, setName);
+    var sorted = Array.prototype.slice.call(risks).sort(function (a, b) { return a - b; });
+    var out = {
+      point_pct: 100 * (unk.length ? pct(sorted, 0.5) : risks[0]),
+      low_pct: 100 * pct(sorted, 0.1),
+      high_pct: 100 * pct(sorted, 0.9),
+      is_certain: unk.length === 0,
+      unknown_fields: unk,
+      horizon_years: 5,
+      applicability: applicability(p)
+    };
+    out.interval_width_pct = out.high_pct - out.low_pct;
+    if (unk.length) out.value_of_information = valueOfInformation(p, Math.min(n, 12000), seed + 1, setName);
+    return out;
+  }
+
+  /* ---- counterfactuals ---------------------------------------------------
+   * "Start blood-pressure medication" is deliberately NOT offered. At a fixed measured
+   * SBP the fitted model gives treated people lower risk than untreated people — an
+   * artifact of the flatter SBP-risk slope observed in treated cohorts, not a causal
+   * treatment effect. Offering it would tell users a pill beats lowering their BP.
+   * The honest lever is the SBP value itself.
+   * -------------------------------------------------------------------- */
+  function counterfactuals(p, setName) {
+    var current = risk(p, setName), out = [];
+    function add(label, mod, caveat) {
+      var q = Object.assign({}, p, mod), r = risk(q, setName);
+      if (r < current - 1e-12) {
+        out.push({
+          change: label, new_risk_pct: 100 * r,
+          absolute_reduction_pct_points: 100 * (current - r),
+          relative_reduction: (current - r) / current, caveat: caveat || null
+        });
+      }
+    }
+    if (p.sbp > 120) {
+      [140, 130, 120].forEach(function (t) {
+        if (p.sbp > t) add("Lower systolic BP from " + Math.round(p.sbp) + " to " + t + " mmHg",
+          { sbp: t }, "Achieved with a doctor — through treatment, salt reduction, weight "
+                    + "loss and exercise. Not something this tool can prescribe.");
+      });
+    }
+    if (p.smokeless_tobacco) {
+      add("Stop chewing tobacco", { smokeless_tobacco: false },
+        "Modelled as the contrast with a non-user, using a pooled hazard ratio from a "
+      + "meta-analysis of chewing-tobacco users.");
+    }
+    if (p.current_smoker) {
+      add("Stop smoking", { current_smoker: false },
+        "The model treats smoking as current/not-current, so this is the contrast with a "
+      + "non-smoker rather than a predicted trajectory after quitting.");
+    }
+    if (p.atrial_fib) {
+      out.push({
+        change: "Atrial fibrillation — ask about anticoagulation",
+        new_risk_pct: null, absolute_reduction_pct_points: null, relative_reduction: null,
+        caveat: "AF is an input to this model, so it cannot be switched off here. But "
+              + "AF-related stroke is substantially preventable with appropriate "
+              + "anticoagulation. Worth raising with a doctor now."
+      });
+    }
+    out.sort(function (a, b) { return (b.relative_reduction || 0) - (a.relative_reduction || 0); });
+    return { current_risk_pct: 100 * current, options: out };
+  }
+
+  var API = {
+    linearPredictor: linearPredictor, risk: risk, applicability: applicability,
+    estimate: estimate, valueOfInformation: valueOfInformation,
+    counterfactuals: counterfactuals, unknownsOf: unknownsOf,
+    UNCERTAIN_FIELDS: UNCERTAIN_FIELDS
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  root.BrainShieldRisk = API;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+/* ============================================================================
+   BrainShield — rPPG signal-processing core
+   ----------------------------------------------------------------------------
+   Recovers a pulse waveform from a sequence of per-frame mean RGB values.
+
+   Face mode  : POS algorithm (Wang et al., "Algorithmic Principles of Remote
+                PPG", IEEE TBME 2017) — projects normalized RGB onto a plane
+                orthogonal to the skin-tone direction, which suppresses
+                intensity/motion artifacts far better than raw green channel.
+   Finger mode: contact PPG with torch. POS's skin-reflection model does not
+                hold when a finger is pressed to the lens under flash, so we
+                instead pick the colour channel with the best in-band SNR.
+
+   All stages are plain JS with no dependencies so the same file runs in Node
+   (for the validation tests) and in the browser.
+   ========================================================================== */
+(function (root) {
+  "use strict";
+
+  // ---------------------------------------------------------------- FFT ----
+  function nextPow2(n) { var p = 1; while (p < n) p <<= 1; return p; }
+
+  function fft(re, im) {
+    var n = re.length, i, j, bit, len, ang, wr, wi, cwr, cwi, ur, ui, vr, vi, nwr, tmp, half;
+    for (i = 1, j = 0; i < n; i++) {
+      bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        tmp = re[i]; re[i] = re[j]; re[j] = tmp;
+        tmp = im[i]; im[i] = im[j]; im[j] = tmp;
+      }
+    }
+    for (len = 2; len <= n; len <<= 1) {
+      ang = -2 * Math.PI / len;
+      wr = Math.cos(ang); wi = Math.sin(ang);
+      half = len >> 1;
+      for (i = 0; i < n; i += len) {
+        cwr = 1; cwi = 0;
+        for (j = 0; j < half; j++) {
+          ur = re[i + j]; ui = im[i + j];
+          vr = re[i + j + half] * cwr - im[i + j + half] * cwi;
+          vi = re[i + j + half] * cwi + im[i + j + half] * cwr;
+          re[i + j] = ur + vr; im[i + j] = ui + vi;
+          re[i + j + half] = ur - vr; im[i + j + half] = ui - vi;
+          nwr = cwr * wr - cwi * wi;
+          cwi = cwr * wi + cwi * wr;
+          cwr = nwr;
+        }
+      }
+    }
+  }
+
+  function ifft(re, im) {
+    var n = re.length, i;
+    for (i = 0; i < n; i++) im[i] = -im[i];
+    fft(re, im);
+    for (i = 0; i < n; i++) { re[i] /= n; im[i] = -im[i] / n; }
+  }
+
+  // ------------------------------------------------------------ helpers ----
+  function mean(a) { var s = 0, i; for (i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+  function std(a) {
+    var m = mean(a), s = 0, i;
+    for (i = 0; i < a.length; i++) s += (a[i] - m) * (a[i] - m);
+    return Math.sqrt(s / Math.max(1, a.length - 1));
+  }
+  function detrend(a) {
+    // remove linear trend (least squares)
+    var n = a.length, i, sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (i = 0; i < n; i++) { sx += i; sy += a[i]; sxx += i * i; sxy += i * a[i]; }
+    var den = n * sxx - sx * sx;
+    var slope = den === 0 ? 0 : (n * sxy - sx * sy) / den;
+    var icpt = (sy - slope * sx) / n;
+    var out = new Array(n);
+    for (i = 0; i < n; i++) out[i] = a[i] - (slope * i + icpt);
+    return out;
+  }
+
+  /* Resample irregularly-timed samples onto a uniform grid. Browser frame
+     delivery jitters, and FFT-based estimation assumes uniform spacing, so
+     skipping this quietly biases the heart-rate estimate. */
+  function resampleUniform(times, channels, fs) {
+    var t0 = times[0], t1 = times[times.length - 1];
+    var n = Math.floor((t1 - t0) * fs);
+    if (n < 2) return null;
+    var out = [], c;
+    for (c = 0; c < channels.length; c++) out.push(new Array(n));
+    var idx = 0, i, k, tt, frac;
+    for (i = 0; i < n; i++) {
+      tt = t0 + i / fs;
+      while (idx < times.length - 2 && times[idx + 1] < tt) idx++;
+      var ta = times[idx], tb = times[idx + 1];
+      frac = tb > ta ? (tt - ta) / (tb - ta) : 0;
+      if (frac < 0) frac = 0; if (frac > 1) frac = 1;
+      for (c = 0; c < channels.length; c++) {
+        out[c][i] = channels[c][idx] + frac * (channels[c][idx + 1] - channels[c][idx]);
+      }
+    }
+    return out;
+  }
+
+  // ------------------------------------------------------- POS algorithm ----
+  function pos(R, G, B, fs) {
+    var N = R.length;
+    var l = Math.round(1.6 * fs);          // 1.6 s sliding window (Wang et al.)
+    if (l < 8 || N < l) l = Math.max(8, Math.min(N, l));
+    var H = new Array(N).fill(0);
+    var n, i, mr, mg, mb, S1 = new Array(l), S2 = new Array(l), a, h, hm;
+
+    for (n = 0; n + l <= N; n++) {
+      mr = 0; mg = 0; mb = 0;
+      for (i = 0; i < l; i++) { mr += R[n + i]; mg += G[n + i]; mb += B[n + i]; }
+      mr /= l; mg /= l; mb /= l;
+      if (mr === 0 || mg === 0 || mb === 0) continue;
+      for (i = 0; i < l; i++) {
+        var rn = R[n + i] / mr, gn = G[n + i] / mg, bn = B[n + i] / mb;
+        S1[i] = gn - bn;                 // P row 1: [ 0, 1, -1]
+        S2[i] = gn + bn - 2 * rn;        // P row 2: [-2, 1,  1]
+      }
+      var s2s = std(S2);
+      a = s2s === 0 ? 0 : std(S1) / s2s;
+      h = new Array(l);
+      for (i = 0; i < l; i++) h[i] = S1[i] + a * S2[i];
+      hm = mean(h);
+      for (i = 0; i < l; i++) H[n + i] += (h[i] - hm);   // overlap-add
+    }
+    return H;
+  }
+
+  // ----------------------------------------------------- CHROM algorithm ----
+  function chrom(R, G, B, fs) {
+    var N = R.length;
+    var mr = mean(R), mg = mean(G), mb = mean(B);
+    if (mr === 0 || mg === 0 || mb === 0) return new Array(N).fill(0);
+    var Xs = new Array(N), Ys = new Array(N), i;
+    for (i = 0; i < N; i++) {
+      var rn = R[i] / mr, gn = G[i] / mg, bn = B[i] / mb;
+      Xs[i] = 3 * rn - 2 * gn;
+      Ys[i] = 1.5 * rn + gn - 1.5 * bn;
+    }
+    var Xf = bandpass(Xs, fs, 0.7, 4.0);
+    var Yf = bandpass(Ys, fs, 0.7, 4.0);
+    var sy = std(Yf);
+    var a = sy === 0 ? 0 : std(Xf) / sy;
+    var S = new Array(N);
+    for (i = 0; i < N; i++) S[i] = Xf[i] - a * Yf[i];
+    return S;
+  }
+
+  // ------------------------------------------------------- zero-phase BP ----
+  function bandpass(x, fs, lo, hi) {
+    var N = x.length, M = nextPow2(N), k;
+    var re = new Float64Array(M), im = new Float64Array(M);
+    var xd = detrend(x);
+    for (k = 0; k < N; k++) re[k] = xd[k];
+    fft(re, im);
+    for (k = 0; k < M; k++) {
+      var f = Math.abs((k <= M / 2 ? k : k - M) * fs / M);
+      if (f < lo || f > hi) { re[k] = 0; im[k] = 0; }
+    }
+    ifft(re, im);
+    var out = new Array(N);
+    for (k = 0; k < N; k++) out[k] = re[k];
+    return out;
+  }
+
+  // ------------------------------------------------------------ spectrum ----
+  function spectrum(x, fs) {
+    var N = x.length, M = nextPow2(N * 4), i;   // zero-pad ×4 for finer bins
+    var re = new Float64Array(M), im = new Float64Array(M);
+    var xd = detrend(x);
+    for (i = 0; i < N; i++) {
+      var w = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / Math.max(1, N - 1)); // Hann
+      re[i] = xd[i] * w;
+    }
+    fft(re, im);
+    var half = M >> 1, freqs = new Array(half), power = new Array(half);
+    for (i = 0; i < half; i++) {
+      freqs[i] = i * fs / M;
+      power[i] = re[i] * re[i] + im[i] * im[i];
+    }
+    return { freqs: freqs, power: power };
+  }
+
+  var HR_LO = 0.7, HR_HI = 4.0;   // 42–240 bpm
+
+  function estimateHR(sig, fs) {
+    var sp = spectrum(sig, fs);
+    var f = sp.freqs, p = sp.power;
+    var best = -1, bi = -1, i;
+    for (i = 0; i < f.length; i++) {
+      if (f[i] >= HR_LO && f[i] <= HR_HI && p[i] > best) { best = p[i]; bi = i; }
+    }
+    if (bi <= 0 || bi >= f.length - 1) return { hr: null, snr: -99, freq: null, spectrum: sp };
+
+    // parabolic interpolation for sub-bin frequency accuracy
+    var y0 = p[bi - 1], y1 = p[bi], y2 = p[bi + 1];
+    var den = (y0 - 2 * y1 + y2);
+    var delta = den === 0 ? 0 : 0.5 * (y0 - y2) / den;
+    if (!isFinite(delta) || Math.abs(delta) > 1) delta = 0;
+    var df = f[1] - f[0];
+    var fpk = f[bi] + delta * df;
+
+    /* SNR after de Haan & Jeanne: power within ±0.1 Hz of the fundamental and
+       ±0.2 Hz of the first harmonic, versus everything else in the HR band. */
+    var sigP = 0, totP = 0;
+    for (i = 0; i < f.length; i++) {
+      if (f[i] < HR_LO || f[i] > HR_HI) continue;
+      totP += p[i];
+      if (Math.abs(f[i] - fpk) <= 0.1 || Math.abs(f[i] - 2 * fpk) <= 0.2) sigP += p[i];
+    }
+    var noiseP = Math.max(1e-12, totP - sigP);
+    var snr = 10 * Math.log10(Math.max(1e-12, sigP) / noiseP);
+    return { hr: fpk * 60, snr: snr, freq: fpk, spectrum: sp };
+  }
+
+  // -------------------------------------------------------------- peaks ----
+  function findPeaks(sig, fs, hrHz) {
+    var minDist = Math.max(3, Math.round(0.6 * (1 / hrHz) * fs));
+    var peaks = [], i;
+    for (i = 1; i < sig.length - 1; i++) {
+      if (sig[i] > sig[i - 1] && sig[i] >= sig[i + 1] && sig[i] > 0) {
+        if (peaks.length && i - peaks[peaks.length - 1] < minDist) {
+          if (sig[i] > sig[peaks[peaks.length - 1]]) peaks[peaks.length - 1] = i;
+        } else peaks.push(i);
+      }
+    }
+    return peaks;
+  }
+
+  function hrvMetrics(peaks, fs) {
+    if (peaks.length < 4) return null;
+    var ibi = [], i;
+    for (i = 1; i < peaks.length; i++) ibi.push((peaks[i] - peaks[i - 1]) / fs * 1000);
+    // drop physiologically implausible intervals (250–2000 ms)
+    ibi = ibi.filter(function (v) { return v > 250 && v < 2000; });
+    if (ibi.length < 3) return null;
+    var sdnn = std(ibi);
+    var d = [], rmssd;
+    for (i = 1; i < ibi.length; i++) d.push((ibi[i] - ibi[i - 1]) * (ibi[i] - ibi[i - 1]));
+    rmssd = Math.sqrt(mean(d));
+    return { sdnn: sdnn, rmssd: rmssd, meanIBI: mean(ibi), nBeats: ibi.length + 1, ibi: ibi };
+  }
+
+  // ------------------------------------------------------ channel picker ----
+  /* Finger-on-lens contact PPG: POS assumes ambient-light skin reflection and
+     misbehaves here, so choose whichever channel carries the cleanest pulse. */
+  function bestChannel(R, G, B, fs) {
+    var cands = [{ n: "green", x: G }, { n: "red", x: R }, { n: "blue", x: B }];
+    var best = null, i;
+    for (i = 0; i < cands.length; i++) {
+      var filt = bandpass(cands[i].x, fs, HR_LO, HR_HI);
+      var est = estimateHR(filt, fs);
+      if (!best || est.snr > best.est.snr) best = { name: cands[i].n, sig: filt, est: est };
+    }
+    return best;
+  }
+
+  /* --------------------------------------------------- consistency check ----
+     SNR alone is NOT a sufficient quality gate. When the estimator locks onto
+     a motion artifact, that artifact is itself a clean spectral peak, so SNR
+     looks excellent while the reported rate is simply wrong. A true pulse is
+     stable over time; motion artifacts wander. Estimating HR independently in
+     overlapping sub-windows and measuring the spread catches exactly the
+     failure SNR misses. */
+  function temporalConsistency(sig, fs) {
+    var winSec = 8, stepSec = 2;
+    var w = Math.round(winSec * fs), st = Math.round(stepSec * fs);
+    if (sig.length < w + st) return { spread: null, hrs: [], median: null };
+    var hrs = [], i;
+    for (i = 0; i + w <= sig.length; i += st) {
+      var seg = sig.slice(i, i + w);
+      var e = estimateHR(seg, fs);
+      if (e.hr !== null) hrs.push(e.hr);
+    }
+    if (hrs.length < 2) return { spread: null, hrs: hrs, median: null };
+    var sorted = hrs.slice().sort(function (a, b) { return a - b; });
+    var median = sorted[Math.floor(sorted.length / 2)];
+    // median absolute deviation — robust to a single bad window
+    var devs = hrs.map(function (h) { return Math.abs(h - median); }).sort(function (a, b) { return a - b; });
+    var mad = devs[Math.floor(devs.length / 2)];
+    return { spread: mad, hrs: hrs, median: median, max: sorted[sorted.length - 1], min: sorted[0] };
+  }
+
+  // ---------------------------------------------------------- main entry ----
+  /**
+   * @param samples {times:[s], r:[], g:[], b:[]}
+   * @param opts    {mode:"finger"|"face", fs:Number}
+   */
+  function analyse(samples, opts) {
+    opts = opts || {};
+    var mode = opts.mode || "face";
+    var fs = opts.fs || 30;
+
+    if (!samples.times || samples.times.length < fs * 4) {
+      return { ok: false, reason: "Not enough data — need at least a few seconds of steady capture." };
+    }
+
+    var rs = resampleUniform(samples.times, [samples.r, samples.g, samples.b], fs);
+    if (!rs) return { ok: false, reason: "Could not resample capture — frame timing was unusable." };
+    var R = rs[0], G = rs[1], B = rs[2];
+
+    var sig, est, method, agreement = null;
+    if (mode === "finger") {
+      var bc = bestChannel(R, G, B, fs);
+      sig = bc.sig; est = bc.est; method = "contact PPG (" + bc.name + " channel)";
+    } else {
+      var hPos = bandpass(pos(R, G, B, fs), fs, HR_LO, HR_HI);
+      var ePos = estimateHR(hPos, fs);
+      var hChr = bandpass(chrom(R, G, B, fs), fs, HR_LO, HR_HI);
+      var eChr = estimateHR(hChr, fs);
+      /* Cross-algorithm agreement: POS and CHROM make different assumptions,
+         so a genuine pulse shows up in both. A motion artifact often does not. */
+      if (ePos.hr !== null && eChr.hr !== null) agreement = Math.abs(ePos.hr - eChr.hr);
+      if (ePos.snr >= eChr.snr) { sig = hPos; est = ePos; method = "POS"; }
+      else { sig = hChr; est = eChr; method = "CHROM"; }
+    }
+
+    if (est.hr === null) return { ok: false, reason: "No pulse-band signal found." };
+
+    var consist = temporalConsistency(sig, fs);
+
+    /* ---- signal quality ----
+       Three independent gates, because any one alone can be fooled:
+         SNR         — is there a clean peak at all?
+         consistency — is it STABLE (a pulse) or wandering (an artifact)?
+         agreement   — do two different algorithms see the same thing?
+       Consistency is weighted heavily: it is the only one that reliably
+       catches a confident lock onto a motion artifact. */
+    var quality, qLabel, qNote;
+    var unstable = consist.spread !== null && consist.spread > 6;
+    var veryUnstable = consist.spread !== null && consist.spread > 12;
+    var disagree = agreement !== null && agreement > 8;
+
+    if (est.snr >= 3 && !unstable && !disagree) {
+      quality = "good"; qLabel = "Good signal";
+      qNote = "Clear, stable pulse-band peak.";
+    } else if (est.snr >= -1 && !veryUnstable && !(unstable && disagree)) {
+      quality = "fair"; qLabel = "Fair signal";
+      qNote = "Pulse detected but noisy — treat the value as approximate.";
+    } else {
+      quality = "poor"; qLabel = "Poor signal — not reliable";
+      qNote = veryUnstable
+        ? "The detected rate drifted between measurement windows, which usually means motion rather than a pulse was tracked. Hold still, improve lighting, and try again."
+        : "Too noisy to trust. Hold still, improve lighting, and try again.";
+    }
+
+    var hrv = null;
+    if (quality !== "poor") hrv = hrvMetrics(findPeaks(sig, fs, est.freq), fs);
+
+    // brightness stability — a proxy for motion/lighting disturbance
+    var lum = new Array(G.length), i;
+    for (i = 0; i < G.length; i++) lum[i] = 0.299 * R[i] + 0.587 * G[i] + 0.114 * B[i];
+    var lumMean = mean(lum);
+    var stability = lumMean > 0 ? (std(detrend(lum)) / lumMean) * 100 : 0;
+
+    return {
+      ok: true,
+      hr: est.hr,
+      snr: est.snr,
+      quality: quality,
+      qualityLabel: qLabel,
+      qualityNote: qNote,
+      method: method,
+      hrv: hrv,
+      consistencySpread: consist.spread,
+      windowHRs: consist.hrs,
+      crossMethodDelta: agreement,
+      waveform: sig,
+      fs: fs,
+      spectrum: est.spectrum,
+      durationSec: samples.times[samples.times.length - 1] - samples.times[0],
+      meanLuma: lumMean,
+      stabilityPct: stability
+    };
+  }
+
+  // ----------------------------------------- synthetic self-test signal ----
+  /* Used by the built-in self-test and by the Node validation suite.
+     melanin: 0 (light) → 1 (very dark); attenuates both DC reflectance and,
+     more importantly, the AC pulse amplitude, which is the documented cause of
+     rPPG accuracy loss on darker skin. */
+  function synth(opts) {
+    opts = opts || {};
+    var bpm = opts.bpm || 72, dur = opts.dur || 20, fs = opts.fs || 30;
+    var melanin = opts.melanin === undefined ? 0 : opts.melanin;
+    var noise = opts.noise === undefined ? 0.15 : opts.noise;
+    var seed = opts.seed === undefined ? 1 : opts.seed;
+    var n = Math.round(dur * fs), f = bpm / 60;
+    var times = [], r = [], g = [], b = [], i;
+
+    var s = seed;
+    function rnd() { s = (s * 1103515245 + 12345) & 0x7fffffff; return (s / 0x7fffffff) * 2 - 1; }
+
+    var atten = Math.pow(1 - 0.75 * melanin, 1.5);   // AC amplitude loss
+    var dc = 150 * (1 - 0.72 * melanin);             // baseline reflectance
+    // hemoglobin absorbs green most, then blue, then red
+    var aG = 1.6 * atten, aB = 0.9 * atten, aR = 0.5 * atten;
+
+    /* Motion artifact — in practice the dominant real-world noise source, and
+       critically it is NOT attenuated by melanin, so as the pulse shrinks the
+       artifact-to-signal ratio grows. This is why accuracy degrades on darker
+       skin in the field far more than sensor noise alone would predict. */
+    var motion = opts.motion === undefined ? 0 : opts.motion;
+    var walk = 0;
+    /* In-band interferer: quasi-periodic motion (head sway, hand tremor,
+       rocking) landing inside 0.7–4 Hz. This is the artifact that actually
+       causes gross HR errors, because the estimator can lock onto it instead
+       of the pulse once the pulse is attenuated. */
+    var ibFreq = opts.interfFreq === undefined ? 1.45 : opts.interfFreq;
+    var ibAmp = opts.interf === undefined ? 0 : opts.interf;
+
+    for (i = 0; i < n; i++) {
+      var t = i / fs;
+      // pulse waveform: fundamental + dicrotic-ish harmonic
+      var p = Math.sin(2 * Math.PI * f * t) + 0.35 * Math.sin(4 * Math.PI * f * t + 0.6);
+      var drift = 2.0 * Math.sin(2 * Math.PI * 0.06 * t);      // slow illumination drift
+      var resp = 0.6 * Math.sin(2 * Math.PI * 0.25 * t);       // breathing
+      walk = 0.92 * walk + motion * rnd();                     // correlated motion
+      var jolt = (Math.abs(rnd()) > 0.985) ? motion * 4 * rnd() : 0;  // occasional lurch
+      // wandering-phase in-band interferer (not perfectly periodic, like real motion)
+      /* Real motion wanders in frequency (sway, shifting posture, tremor),
+         unlike a metronome. `interfWander` sets how much, in Hz. */
+      var wander = opts.interfWander === undefined ? 0 : opts.interfWander;
+      var instFreq = ibFreq + wander * Math.sin(2 * Math.PI * 0.045 * t + 0.7);
+      var ib = ibAmp * Math.sin(2 * Math.PI * instFreq * t + 1.3 * Math.sin(2 * Math.PI * 0.11 * t));
+      var mo = walk + jolt;
+      /* Motion is only partly achromatic: changing skin-to-light geometry and
+         ROI content also shifts colour balance, so a fraction of the artifact
+         carries a pulse-like chromatic signature that POS cannot project out. */
+      var ibChrom = opts.interfChrom === undefined ? 0.45 : opts.interfChrom;
+      times.push(t);
+      r.push(dc * 1.00 + aR * p + drift + resp * 0.4 + mo * 1.00 + ib * (1 - ibChrom + ibChrom * 0.31) + noise * rnd());
+      g.push(dc * 0.78 + aG * p + drift + resp * 0.5 + mo * 0.95 + ib * (1 - ibChrom + ibChrom * 1.00) + noise * rnd());
+      b.push(dc * 0.65 + aB * p + drift + resp * 0.3 + mo * 0.90 + ib * (1 - ibChrom + ibChrom * 0.56) + noise * rnd());
+    }
+    return { times: times, r: r, g: g, b: b };
+  }
+
+  var API = {
+    analyse: analyse, synth: synth, pos: pos, chrom: chrom, bandpass: bandpass,
+    estimateHR: estimateHR, spectrum: spectrum, hrvMetrics: hrvMetrics,
+    findPeaks: findPeaks, resampleUniform: resampleUniform, fft: fft, ifft: ifft
+  };
+
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  else root.RPPG = API;
+})(typeof window !== "undefined" ? window : this);
+
+/*
+ * Atrial fibrillation screening from pulse intervals.
+ *
+ * Mirrors src/af/build_afdb.py feature-for-feature; parity is enforced by
+ * tests/test_af_parity.js against fixtures computed in Python.
+ *
+ * Design rule enforced in decide(): this module may conclude "rhythm looks regular"
+ * but must never conclude "you have AF". On phone-camera PPG in an unscreened
+ * population the positive predictive value is roughly 20-40% while the negative
+ * predictive value is near 100% (meta-analysis, 10 studies / 3,852 participants,
+ * PMC7125433). So a negative is trustworthy and a positive is a referral, not a finding.
+ */
+(function (root) {
+  "use strict";
+
+  /* ---- sub-sample peak refinement --------------------------------------
+   * A 30 fps camera quantises every beat to a 33 ms grid, which is the same order
+   * as the beat-to-beat variability that distinguishes normal rhythm from AF.
+   * Fitting a parabola through the peak sample and its two neighbours recovers the
+   * true maximum to a fraction of a frame, which is what makes the interval
+   * statistics usable at all at this frame rate.
+   * -------------------------------------------------------------------- */
+  function refinePeaks(sig, peaks) {
+    var out = [];
+    for (var i = 0; i < peaks.length; i++) {
+      var p = peaks[i];
+      if (p <= 0 || p >= sig.length - 1) { out.push(p); continue; }
+      var y0 = sig[p - 1], y1 = sig[p], y2 = sig[p + 1];
+      var denom = y0 - 2 * y1 + y2;
+      // denom >= 0 means this is not a strict local max; fall back to the integer index
+      var delta = (denom < 0) ? 0.5 * (y0 - y2) / denom : 0;
+      if (!isFinite(delta) || Math.abs(delta) > 0.5) delta = 0;
+      out.push(p + delta);
+    }
+    return out;
+  }
+
+  /** Peak indices (possibly fractional) -> RR intervals in milliseconds. */
+  function rrFromPeaks(peaks, fs) {
+    var rr = [];
+    for (var i = 1; i < peaks.length; i++) rr.push((peaks[i] - peaks[i - 1]) / fs * 1000);
+    return rr.filter(function (v) { return v > 250 && v < 2500; });
+  }
+
+  /* ---- features (must match build_afdb.py) ------------------------------ */
+  function mean(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s / a.length; }
+  function varianceSample(a) {
+    if (a.length < 2) return NaN;
+    var m = mean(a), s = 0;
+    for (var i = 0; i < a.length; i++) s += (a[i] - m) * (a[i] - m);
+    return s / (a.length - 1);
+  }
+  function percentile(sorted, q) {
+    var i = (sorted.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i);
+    return lo === hi ? sorted[lo] : sorted[lo] + (i - lo) * (sorted[hi] - sorted[lo]);
+  }
+  function diff(a) { var d = []; for (var i = 1; i < a.length; i++) d.push(a[i] - a[i - 1]); return d; }
+
+  function shannonEntropy(rr, bins) {
+    bins = bins || 16;
+    if (rr.length < 4) return NaN;
+    var sorted = rr.slice().sort(function (x, y) { return x - y; });
+    var lo = percentile(sorted, 0.01), hi = percentile(sorted, 0.99);
+    if (hi <= lo) return 0;
+    var h = new Array(bins).fill(0), i, idx, n = 0;
+    for (i = 0; i < rr.length; i++) {
+      if (rr[i] < lo || rr[i] > hi) continue;
+      idx = Math.min(bins - 1, Math.floor((rr[i] - lo) / (hi - lo) * bins));
+      h[idx]++; n++;
+    }
+    if (!n) return 0;
+    var e = 0;
+    for (i = 0; i < bins; i++) { var p = h[i] / n; if (p > 0) e -= p * Math.log(p); }
+    return e / Math.log(bins);
+  }
+
+  function sampleEntropy(rr, m, rFrac) {
+    m = m || 2; rFrac = rFrac || 0.2;
+    var n = rr.length;
+    if (n < m + 2) return NaN;
+    var sd = Math.sqrt(varianceSample(rr) * (n - 1) / n);   // population SD, matches numpy
+    var r = rFrac * sd;
+    if (!(r > 0)) return 0;
+
+    function count(mm) {
+      var k = n - mm + 1, c = 0, i, j, d, q;
+      if (k < 2) return 0;
+      for (i = 0; i < k - 1; i++) {
+        for (j = i + 1; j < k; j++) {
+          d = 0;
+          for (q = 0; q < mm; q++) d = Math.max(d, Math.abs(rr[i + q] - rr[j + q]));
+          if (d <= r) c++;
+        }
+      }
+      return c;
+    }
+    var a = count(m + 1), b = count(m);
+    // See build_afdb.py: no matching templates means maximal irregularity, not an
+    // undefined value. Returning NaN here rejected the clearest AF cases outright.
+    var upper = (n > m + 1) ? -Math.log(2.0 / ((n - m - 1) * (n - m))) : 0;
+    if (a === 0 || b === 0) return upper;
+    return Math.min(-Math.log(a / b), upper);
+  }
+
+  function poincare(rr) {
+    if (rr.length < 3) return { sd1: NaN, sd2: NaN };
+    var d = diff(rr);
+    var sd1 = d.length > 1 ? Math.sqrt(varianceSample(d) / 2) : NaN;
+    var sd = varianceSample(rr);
+    var sd2sq = 2 * sd - sd1 * sd1;
+    return { sd1: sd1, sd2: sd2sq > 0 ? Math.sqrt(sd2sq) : NaN };
+  }
+
+  function afFeatures(rr) {
+    if (!rr || rr.length < 4) return null;
+    var meanRR = mean(rr), d = diff(rr), i, s = 0;
+    for (i = 0; i < d.length; i++) s += d[i] * d[i];
+    var rmssd = d.length ? Math.sqrt(s / d.length) : NaN;
+    var pc = poincare(rr);
+    var over50 = 0, over70 = 0;
+    for (i = 0; i < d.length; i++) {
+      if (Math.abs(d[i]) > 50) over50++;
+      if (Math.abs(d[i]) > 70) over70++;
+    }
+    return {
+      mean_rr: meanRR,
+      hr: 60000 / meanRR,
+      rmssd: rmssd,
+      rmssd_norm: rmssd / meanRR,
+      cv: Math.sqrt(varianceSample(rr)) / meanRR,
+      prr50: d.length ? over50 / d.length : NaN,
+      prr70: d.length ? over70 / d.length : NaN,
+      shannon: shannonEntropy(rr),
+      sampen: sampleEntropy(rr),
+      sd1: pc.sd1,
+      sd2: pc.sd2,
+      sd1_sd2: (pc.sd2 > 0) ? pc.sd1 / pc.sd2 : NaN
+    };
+  }
+
+  /* ---- classifier ------------------------------------------------------- */
+  function classify(feats, model) {
+    if (!model) throw new Error("AF_MODEL not loaded");
+    var z = model.intercept, i, name, v;
+    for (i = 0; i < model.feature_names.length; i++) {
+      name = model.feature_names[i];
+      v = feats[name];
+      if (v === undefined || v === null || !isFinite(v)) return null;
+      z += model.coef[i] * ((v - model.mean[i]) / model.scale[i]);
+    }
+    return 1 / (1 + Math.exp(-z));
+  }
+
+  /* ---- the asymmetric decision ------------------------------------------
+   * Three outcomes, never two. "Positive" is deliberately not a conclusion.
+   * -------------------------------------------------------------------- */
+  function decide(feats, model, quality) {
+    if (!quality || !quality.ok) {
+      return {
+        outcome: "unusable",
+        sets_af: null,
+        headline: "Couldn't read your pulse clearly",
+        detail: (quality && quality.reason) || "Signal quality too low to analyse.",
+        probability: null
+      };
+    }
+    var p = classify(feats, model);
+    if (p === null) {
+      return { outcome: "unusable", sets_af: null,
+               headline: "Couldn't read your pulse clearly",
+               detail: "Not enough clean beats to assess the rhythm.", probability: null };
+    }
+    if (p < model.threshold_rule_out) {
+      return {
+        outcome: "regular", sets_af: false, probability: p,
+        headline: "Your pulse looked regular",
+        detail: "No sign of an irregular rhythm in this recording. This is used to rule "
+              + "atrial fibrillation out of your risk estimate. It is not a substitute for "
+              + "an ECG, and AF can come and go — a single regular reading does not prove "
+              + "you have never had it."
+      };
+    }
+    return {
+      outcome: "irregular", sets_af: null, probability: p,
+      headline: "Your pulse looked irregular — worth getting an ECG",
+      detail: "This does NOT mean you have atrial fibrillation. On a phone camera, most "
+            + "irregular readings turn out not to be AF — common causes are movement, "
+            + "pressing too hard, or ordinary ectopic beats. But AF is worth ruling out "
+            + "properly, because it is treatable and it matters for stroke risk. Your risk "
+            + "estimate has been left unchanged rather than assuming the worst."
+    };
+  }
+
+  var API = {
+    refinePeaks: refinePeaks, rrFromPeaks: rrFromPeaks, afFeatures: afFeatures,
+    classify: classify, decide: decide,
+    shannonEntropy: shannonEntropy, sampleEntropy: sampleEntropy, poincare: poincare
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  root.BrainShieldAF = API;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+/*
+ * Camera capture for the rhythm check.
+ *
+ * Finger over the rear camera with the torch on. This is CONTACT photoplethysmography
+ * with active illumination -- a different and far more robust measurement than
+ * face rPPG in ambient light, which is why it is the only camera mode offered here.
+ *
+ * Reuses the tested DSP in rppg_core.js for filtering and quality gating, then layers
+ * the rhythm analysis from af_core.js on top.
+ */
+(function (root) {
+  "use strict";
+
+  // The AF classifier was trained on 60-second windows. Shorter captures give too few
+  // beats for the interval statistics to be stable, so this is a floor, not a preference.
+  var TARGET_SECONDS = 60;
+  var MIN_SECONDS = 45;
+
+  function AFCapture(videoEl, canvasEl) {
+    this.video = videoEl;
+    this.canvas = canvasEl || document.createElement("canvas");
+    this.ctx = this.canvas.getContext("2d", { willReadFrequently: true });
+    this.stream = null;
+    this.track = null;
+    this.samples = { times: [], r: [], g: [], b: [] };
+    this.running = false;
+    this.t0 = 0;
+    this.onTick = null;
+    this.torchOn = false;
+  }
+
+  AFCapture.prototype.start = async function () {
+    this.samples = { times: [], r: [], g: [], b: [] };
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: "environment" },
+        width: { ideal: 640 }, height: { ideal: 480 },
+        frameRate: { ideal: 60, min: 15 }     // 60 if the device allows; 30 is fine
+      },
+      audio: false
+    });
+    this.video.srcObject = this.stream;
+    this.video.setAttribute("playsinline", "");
+    await this.video.play().catch(function () {});
+
+    this.track = this.stream.getVideoTracks()[0];
+    // Torch is what makes this a contact measurement rather than a hopeful one.
+    try {
+      var caps = this.track.getCapabilities ? this.track.getCapabilities() : {};
+      if (caps && caps.torch) {
+        await this.track.applyConstraints({ advanced: [{ torch: true }] });
+        this.torchOn = true;
+      }
+    } catch (e) { /* torch unsupported; capture still works, just noisier */ }
+
+    this.canvas.width = 64;
+    this.canvas.height = 48;
+    this.running = true;
+    this.t0 = performance.now();
+    this._loop();
+    return { torch: this.torchOn };
+  };
+
+  AFCapture.prototype._grab = function (nowMs) {
+    if (!this.video.videoWidth) return;
+    this.ctx.drawImage(this.video, 0, 0, this.canvas.width, this.canvas.height);
+    var d;
+    try {
+      d = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
+    } catch (e) { return; }
+    var r = 0, g = 0, b = 0, n = 0;
+    // central region only: the edges of a fingertip press are the least stable
+    var W = this.canvas.width, H = this.canvas.height;
+    for (var y = (H >> 2); y < H - (H >> 2); y++) {
+      for (var x = (W >> 2); x < W - (W >> 2); x++) {
+        var i = (y * W + x) * 4;
+        r += d[i]; g += d[i + 1]; b += d[i + 2]; n++;
+      }
+    }
+    if (!n) return;
+    this.samples.times.push((nowMs - this.t0) / 1000);
+    this.samples.r.push(r / n);
+    this.samples.g.push(g / n);
+    this.samples.b.push(b / n);
+  };
+
+  AFCapture.prototype._loop = function () {
+    var self = this;
+    function step(now) {
+      if (!self.running) return;
+      self._grab(now);
+      var el = self.samples.times.length ? self.samples.times[self.samples.times.length - 1] : 0;
+      if (self.onTick) self.onTick(el, self.samples);
+      if (el >= TARGET_SECONDS) { self.stop(); return; }
+      requestAnimationFrame(step);
+    }
+    // requestVideoFrameCallback gives true frame timing where available
+    if (this.video.requestVideoFrameCallback) {
+      var vstep = function (now) {
+        if (!self.running) return;
+        self._grab(now);
+        var el = self.samples.times.length ? self.samples.times[self.samples.times.length - 1] : 0;
+        if (self.onTick) self.onTick(el, self.samples);
+        if (el >= TARGET_SECONDS) { self.stop(); return; }
+        self.video.requestVideoFrameCallback(vstep);
+      };
+      this.video.requestVideoFrameCallback(vstep);
+    } else {
+      requestAnimationFrame(step);
+    }
+  };
+
+  AFCapture.prototype.stop = function () {
+    this.running = false;
+    if (this.track && this.torchOn) {
+      try {
+        var p = this.track.applyConstraints({ advanced: [{ torch: false }] });
+        if (p && p.catch) p.catch(function () {});
+      } catch (e) { /* ignore */ }
+    }
+    if (this.stream) this.stream.getTracks().forEach(function (t) { t.stop(); });
+    this.stream = null; this.track = null;
+    if (this.video) this.video.srcObject = null;
+  };
+
+  /** Estimate the true capture rate from frame timestamps, rather than assuming 30. */
+  function measuredFps(times) {
+    if (times.length < 10) return 30;
+    var d = [], i;
+    for (i = 1; i < times.length; i++) d.push(times[i] - times[i - 1]);
+    d.sort(function (a, b) { return a - b; });
+    var med = d[d.length >> 1];
+    return (med > 0 && isFinite(med)) ? Math.min(120, Math.max(10, 1 / med)) : 30;
+  }
+
+  /* ---- quality gating for rhythm analysis --------------------------------
+   * This deliberately does NOT reuse rppg_core's headline quality verdict.
+   *
+   * That verdict leans hard on temporal consistency -- whether the estimated heart
+   * rate stays stable across sliding windows -- because a wandering rate usually
+   * means the estimator locked onto a motion artifact. That is exactly right when
+   * the goal is a heart rate.
+   *
+   * It is exactly wrong here. In atrial fibrillation the rate genuinely wanders
+   * between windows, so that gate rejects the very signal we are trying to detect.
+   * Testing confirmed it: a clean synthetic AF waveform was thrown out as "poor".
+   *
+   * Spectral SNR fails here for the same underlying reason. SNR measures how sharp the
+   * dominant frequency peak is, and atrial fibrillation has no sharp peak BY DEFINITION:
+   * irregular intervals spread the pulse energy across the band. A clean synthetic AF
+   * waveform measured SNR -2.6 while a regular one passed easily. Peak sharpness is a
+   * rhythm measurement wearing a quality measurement's clothes.
+   *
+   * So the gates here are all either time-domain or band-aggregate, never peak-based:
+   *   - in-band power fraction: is there a pulse at all, at ANY rate within the band?
+   *   - brightness stability: did the finger shift or the light change?
+   *   - beat amplitude consistency: real beats look alike; artifacts do not.
+   *   - implausible-interval rate: failed beat detection, as distinct from irregularity.
+   * -------------------------------------------------------------------- */
+  function inBandFraction(raw, waveform) {
+    // share of the signal's variance that sits in the pulse band. Unlike SNR this does
+    // not care whether that energy is at one frequency or smeared across the band.
+    function detrendVar(a) {
+      var n = a.length, i, m = 0;
+      for (i = 0; i < n; i++) m += a[i];
+      m /= n;
+      // remove linear drift as well as the mean
+      var sx = 0, sxy = 0, mx = (n - 1) / 2;
+      for (i = 0; i < n; i++) { sx += (i - mx) * (i - mx); sxy += (i - mx) * (a[i] - m); }
+      var slope = sx > 0 ? sxy / sx : 0, v = 0, d;
+      for (i = 0; i < n; i++) { d = a[i] - m - slope * (i - mx); v += d * d; }
+      return v / n;
+    }
+    var vTotal = detrendVar(raw);
+    if (!(vTotal > 0)) return 0;
+    var vBand = detrendVar(waveform);
+    return Math.min(1, vBand / vTotal);
+  }
+
+  function afQuality(res, samples) {
+    var frac = inBandFraction(samples.r, res.waveform);
+    if (frac < 0.02) {
+      return { ok: false, reason: "No pulse was detectable in the recording — almost all "
+             + "of the variation was drift or noise rather than a heartbeat." };
+    }
+    if (res.stabilityPct > 8) {
+      return { ok: false, reason: "The image brightness moved around too much, which "
+             + "usually means the finger shifted or the lighting changed." };
+    }
+
+    var RPPG = root.RPPG, AF = root.BrainShieldAF;
+    var peaks = AF.refinePeaks(res.waveform, RPPG.findPeaks(res.waveform, res.fs, (res.hr || 70) / 60));
+    if (peaks.length < 12) {
+      return { ok: false, reason: "Too few heartbeats were detected in the recording." };
+    }
+
+    // Beat amplitudes should be similar. Motion produces wildly varying peak heights;
+    // atrial fibrillation does not -- it varies the SPACING, not the shape.
+    var amps = [], i, idx;
+    for (i = 0; i < peaks.length; i++) {
+      idx = Math.round(peaks[i]);
+      if (idx >= 0 && idx < res.waveform.length) amps.push(Math.abs(res.waveform[idx]));
+    }
+    var m = 0;
+    for (i = 0; i < amps.length; i++) m += amps[i];
+    m /= amps.length;
+    var v = 0;
+    for (i = 0; i < amps.length; i++) v += (amps[i] - m) * (amps[i] - m);
+    var ampCV = m > 0 ? Math.sqrt(v / amps.length) / m : 99;
+    if (ampCV > 0.75) {
+      return { ok: false, reason: "The pulse waveform was too irregular in shape to trust, "
+             + "which points to movement rather than a steady reading." };
+    }
+
+    // Intervals outside 250-2500 ms mean beat detection failed, which is different
+    // from a genuinely irregular rhythm within the plausible range.
+    var all = [];
+    for (i = 1; i < peaks.length; i++) all.push((peaks[i] - peaks[i - 1]) / res.fs * 1000);
+    var bad = 0;
+    for (i = 0; i < all.length; i++) if (all[i] <= 250 || all[i] >= 2500) bad++;
+    if (all.length && bad / all.length > 0.2) {
+      return { ok: false, reason: "Many beats could not be timed reliably." };
+    }
+    return { ok: true, amp_cv: ampCV, n_peaks: peaks.length, in_band_fraction: frac };
+  }
+
+  /**
+   * Turn a finished capture into a rhythm decision.
+   * Returns the same three-outcome shape as af_core.decide().
+   */
+  function analyseCapture(samples, afModel) {
+    var RPPG = root.RPPG, AF = root.BrainShieldAF;
+    var dur = samples.times.length ? samples.times[samples.times.length - 1] : 0;
+
+    if (dur < MIN_SECONDS) {
+      return {
+        outcome: "unusable", sets_af: null, probability: null,
+        headline: "Recording too short",
+        detail: "The rhythm check needs at least " + MIN_SECONDS + " seconds of steady "
+              + "contact to gather enough heartbeats. Please try again and keep your "
+              + "finger still on the lens."
+      };
+    }
+
+    var fps = measuredFps(samples.times);
+    var res = RPPG.analyse(samples, { mode: "finger", fs: Math.round(fps) });
+
+    if (!res.ok) {
+      return { outcome: "unusable", sets_af: null, probability: null,
+               headline: "Couldn't read your pulse", detail: res.reason };
+    }
+
+    var q = afQuality(res, samples);
+    if (!q.ok) {
+      return {
+        outcome: "unusable", sets_af: null, probability: null,
+        headline: "Signal wasn't clear enough",
+        detail: q.reason + " Try again: cover the lens and flash completely with the pad of "
+              + "your finger, press gently and evenly, and rest your hand on a table.",
+        hr: res.hr, quality: res.quality
+      };
+    }
+
+    var peaksRaw = RPPG.findPeaks(res.waveform, res.fs, (res.hr || 70) / 60);
+    var peaks = AF.refinePeaks(res.waveform, peaksRaw);
+    var rr = AF.rrFromPeaks(peaks, res.fs);
+
+    if (rr.length < afModel.min_beats - 1) {
+      return {
+        outcome: "unusable", sets_af: null, probability: null,
+        headline: "Not enough clean heartbeats",
+        detail: "Found " + rr.length + " usable intervals; the rhythm check needs at least "
+              + (afModel.min_beats - 1) + ". Try a longer, steadier recording.",
+        hr: res.hr
+      };
+    }
+
+    var feats = AF.afFeatures(rr);
+    var decision = AF.decide(feats, afModel, { ok: true });
+    decision.hr = res.hr;
+    decision.quality = res.quality;
+    decision.n_intervals = rr.length;
+    decision.fps = fps;
+    decision.duration = dur;
+    decision.features = feats;
+    return decision;
+  }
+
+  var API = {
+    AFCapture: AFCapture, analyseCapture: analyseCapture, measuredFps: measuredFps,
+    afQuality: afQuality, inBandFraction: inBandFraction,
+    TARGET_SECONDS: TARGET_SECONDS, MIN_SECONDS: MIN_SECONDS
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  root.BrainShieldCapture = API;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+/*
+ * Modality 3 — medical document scanning.
+ *
+ * Reads a photographed medication box or lab report and proposes values for the risk
+ * model. OCR runs client-side (Tesseract.js), so the image never leaves the device.
+ *
+ * HARD RULE: this module returns PROPOSALS, never answers. Every proposal is shown to
+ * the user with the text it was read from, and only takes effect if they confirm it.
+ * That is what makes imperfect OCR acceptable — a misread becomes a question the user
+ * corrects, not a silently wrong risk estimate.
+ */
+(function (root) {
+  "use strict";
+
+  /* ---- fuzzy matching ----------------------------------------------------
+   * OCR on a curved, glossy medicine box mangles characters predictably: TELMA ->
+   * TEIMA, 0 <-> O, 1 <-> l. Exact matching would miss most real photographs, so
+   * tokens are normalised and compared with a bounded edit distance.
+   * -------------------------------------------------------------------- */
+  function normalise(s) {
+    return String(s).toLowerCase()
+      .replace(/[0o]/g, "0").replace(/[1il|]/g, "1").replace(/5/g, "s")
+      .replace(/[^a-z0-9]/g, "");
+  }
+
+  function editDistance(a, b, cap) {
+    if (Math.abs(a.length - b.length) > cap) return cap + 1;
+    var prev = [], cur = [], i, j;
+    for (j = 0; j <= b.length; j++) prev[j] = j;
+    for (i = 1; i <= a.length; i++) {
+      cur[0] = i;
+      var best = i;
+      for (j = 1; j <= b.length; j++) {
+        cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
+                          prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+        if (cur[j] < best) best = cur[j];
+      }
+      if (best > cap) return cap + 1;
+      for (j = 0; j <= b.length; j++) prev[j] = cur[j];
+    }
+    return prev[b.length];
+  }
+
+  /** Tolerance scales with word length: short names must match nearly exactly. */
+  function tolerance(len) { return len <= 4 ? 0 : (len <= 6 ? 1 : 2); }
+
+  function tokenMatches(token, target) {
+    var t = normalise(token), g = normalise(target);
+    if (!t || !g) return false;
+    if (t === g) return true;
+    if (g.length >= 6 && t.indexOf(g) !== -1) return true;   // "telma40" contains "telma"
+    return editDistance(t, g, tolerance(g.length)) <= tolerance(g.length);
+  }
+
+  /* ---- medication extraction -------------------------------------------- */
+  function findMedications(text, dict) {
+    var tokens = String(text).split(/[\s,;()\[\]\/\\|:+]+/).filter(function (t) {
+      return t && t.length >= 4;
+    });
+    var found = [], seen = {};
+
+    Object.keys(dict.classes).forEach(function (className) {
+      var cls = dict.classes[className];
+      Object.keys(cls.drugs).forEach(function (generic) {
+        var names = [generic].concat(cls.drugs[generic]);
+        for (var n = 0; n < names.length; n++) {
+          for (var t = 0; t < tokens.length; t++) {
+            if (tokenMatches(tokens[t], names[n])) {
+              var key = className + "|" + generic;
+              if (seen[key]) return;
+              seen[key] = true;
+              found.push({
+                generic: generic,
+                matched_text: tokens[t],
+                matched_name: names[n],
+                is_brand: n > 0,
+                drug_class: className,
+                implies: cls.implies,
+                confidence: cls.confidence,
+                prompt: cls.prompt
+              });
+              return;
+            }
+          }
+        }
+      });
+    });
+    return found;
+  }
+
+  /* ---- lab value extraction ---------------------------------------------
+   * Looks for "<alias> ... <number>" within a short window, so a value is only
+   * picked up when it sits next to its own label.
+   * -------------------------------------------------------------------- */
+  function findLabValues(text, dict) {
+    var flat = String(text).replace(/\s+/g, " ").toLowerCase();
+    var out = [];
+    Object.keys(dict.lab_tests).forEach(function (key) {
+      var spec = dict.lab_tests[key];
+      for (var i = 0; i < spec.aliases.length; i++) {
+        var alias = spec.aliases[i];
+        var idx = flat.indexOf(alias);
+        if (idx === -1) continue;
+        var tail = flat.slice(idx + alias.length, idx + alias.length + 40);
+        var m = tail.match(/(\d+(?:\.\d+)?)/);
+        if (!m) continue;
+        var val = parseFloat(m[1]);
+        var lo = spec.plausible_range[0], hi = spec.plausible_range[1];
+        if (!(val >= lo && val <= hi)) continue;     // reject OCR garbage
+        out.push({
+          test: key, value: val, unit: spec.unit,
+          implies: spec.implies || null,
+          threshold: spec.threshold || null,
+          exceeds_threshold: spec.threshold ? val >= spec.threshold : null,
+          rule: spec.rule || null,
+          matched_text: alias + " " + m[1]
+        });
+        break;
+      }
+    });
+    return out;
+  }
+
+  /* ---- turn findings into proposals the user must confirm ---------------- */
+  function buildProposals(meds, labs) {
+    var proposals = [], seen = {};
+
+    function add(field, value, reason, confidence, prompt) {
+      var key = field + "=" + value;
+      if (seen[key]) {
+        // Same conclusion reached a second way (e.g. metformin AND a high HbA1c).
+        // Show both reasons rather than silently discarding the corroboration.
+        seen[key].reason += "; also " + reason.charAt(0).toLowerCase() + reason.slice(1);
+        if (confidence === "high") seen[key].confidence = "high";
+        return;
+      }
+      var prop = { field: field, value: value, reason: reason,
+                   confidence: confidence, prompt: prompt, accepted: null };
+      seen[key] = prop;
+      proposals.push(prop);
+    }
+
+    meds.forEach(function (m) {
+      var label = m.generic + (m.is_brand ? " (read as “" + m.matched_text + "”)" : "");
+      if (m.confidence === "signal" || !m.implies) {
+        proposals.push({
+          field: m.implies || null, value: null, question_only: true,
+          reason: "Found " + label, confidence: m.confidence,
+          prompt: m.prompt, accepted: null
+        });
+      } else {
+        add(m.implies, true, "Found " + label, m.confidence, m.prompt);
+      }
+    });
+
+    labs.forEach(function (l) {
+      if (l.test === "systolic_bp") {
+        add("sbp", l.value, "Read blood pressure " + l.value + " " + l.unit, "medium",
+            "Is this your current blood pressure?");
+      } else if (l.implies === "diabetes" && l.exceeds_threshold) {
+        add("diabetes", true,
+            l.test.replace(/_/g, " ") + " of " + l.value + " " + l.unit +
+            " (" + l.rule + ")", "high",
+            "This lab value is in the diabetic range. Have you been diagnosed?");
+      }
+    });
+
+    return proposals;
+  }
+
+  function analyseText(text, dict) {
+    var meds = findMedications(text, dict);
+    var labs = findLabValues(text, dict);
+    return {
+      raw_text_length: String(text).length,
+      medications: meds,
+      lab_values: labs,
+      proposals: buildProposals(meds, labs),
+      nothing_found: meds.length === 0 && labs.length === 0
+    };
+  }
+
+  /* ---- OCR --------------------------------------------------------------- */
+  async function ocrImage(file, onProgress) {
+    if (typeof Tesseract === "undefined") {
+      throw new Error("OCR engine not loaded");
+    }
+    var res = await Tesseract.recognize(file, "eng", {
+      logger: function (m) {
+        if (onProgress && m.status === "recognizing text") onProgress(m.progress);
+      }
+    });
+    return res.data.text;
+  }
+
+  async function scanImage(file, dict, onProgress) {
+    var text = await ocrImage(file, onProgress);
+    var out = analyseText(text, dict);
+    out.raw_text = text;
+    return out;
+  }
+
+  var API = {
+    normalise: normalise, editDistance: editDistance, tokenMatches: tokenMatches,
+    findMedications: findMedications, findLabValues: findLabValues,
+    buildProposals: buildProposals, analyseText: analyseText, scanImage: scanImage
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  root.BrainShieldDocScan = API;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+/*
+ * Wizard controller: questionnaire -> pulse rhythm check -> documents -> risk.
+ *
+ * The profile is built up across the three steps. Each step may only ever RESOLVE an
+ * unknown; no step is allowed to overwrite something the user stated directly, and the
+ * rhythm check is allowed to set atrial fibrillation to false but never to true.
+ */
+(function () {
+  "use strict";
+
+  var R = window.BrainShieldRisk;
+  var AF = window.BrainShieldAF;
+  var CAP = window.BrainShieldCapture;
+  var DOC = window.BrainShieldDocScan;
+
+  var state = {
+    answered: {},          // what the user typed in step 1
+    profile: {},           // working profile, refined by later steps
+    af: null,              // rhythm-check outcome
+    docFindings: null,
+    docApplied: [],        // proposals the user accepted
+    estimates: {}          // snapshots after each step, for the contribution panel
+  };
+
+  var ui = {};
+  ["age","sbp","camStage","cam","countdown","camStatus","wave","startCam","skipCam",
+   "camResult","camNextRow","toStep2","toStep3","toResults","drop","fileInput","ocrStatus",
+   "ocrResult","riskDisplay","riskLabel","riskBand","plainly","optimalVal","cohortVal",
+   "contribList","voiPanel","voiList","cfPanel","cfList","warnings","modelBadge","restart"]
+    .forEach(function (id) { ui[id] = document.getElementById(id); });
+
+  /* ---------------------------------------------------------- step 1 ---- */
+  var toggles = { sbp_known: 1, sex: null, on_htn_meds: null, diabetes: null,
+                  current_smoker: null, prevalent_cvd: null, atrial_fib: null,
+                  smokeless_tobacco: null };
+
+  function parseVal(v) { return v === "null" ? null : (v === "1" ? true : (v === "0" ? false : v)); }
+
+  document.querySelectorAll(".toggle").forEach(function (group) {
+    var field = group.getAttribute("data-field");
+    group.querySelectorAll("button").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        group.querySelectorAll("button").forEach(function (b) { b.classList.remove("active"); });
+        btn.classList.add("active");
+        toggles[field] = parseVal(btn.getAttribute("data-value"));
+        if (field === "sbp_known") {
+          var known = btn.getAttribute("data-value") === "1";
+          ui.sbp.disabled = !known;
+          if (!known) ui.sbp.value = "";
+        }
+      });
+    });
+  });
+
+  function showStep(n) {
+    [1, 2, 3, 4].forEach(function (i) {
+      document.getElementById("step" + i).classList.toggle("active", i === n);
+      var rail = document.getElementById("rail" + i);
+      rail.classList.toggle("active", i === n);
+      rail.classList.toggle("done", i < n);
+    });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function collectStep1() {
+    var age = parseFloat(ui.age.value);
+    if (!age) { alert("Please enter your age."); return null; }
+    if (!toggles.sex) { alert("Please select a sex — the model uses a different equation for each."); return null; }
+    var sbpRaw = ui.sbp.value;
+    return {
+      age: age, sex: toggles.sex,
+      sbp: (toggles.sbp_known && sbpRaw !== "") ? parseFloat(sbpRaw) : null,
+      on_htn_meds: toggles.on_htn_meds, diabetes: toggles.diabetes,
+      current_smoker: toggles.current_smoker, prevalent_cvd: toggles.prevalent_cvd,
+      atrial_fib: toggles.atrial_fib, smokeless_tobacco: toggles.smokeless_tobacco
+    };
+  }
+
+  ui.toStep2.addEventListener("click", function () {
+    var p = collectStep1();
+    if (!p) return;
+    state.answered = JSON.parse(JSON.stringify(p));
+    state.profile = JSON.parse(JSON.stringify(p));
+    state.estimates.questionnaire = R.estimate(state.profile, { n: 20000 });
+    showStep(2);
+  });
+
+  /* ---------------------------------------------------------- step 2 ---- */
+  var capture = null;
+
+  function drawWave(samples) {
+    var cv = ui.wave, ctx = cv.getContext("2d");
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    var r = samples.r;
+    if (r.length < 4) return;
+    var n = Math.min(r.length, 300), start = r.length - n;
+    var slice = r.slice(start), mn = Math.min.apply(null, slice), mx = Math.max.apply(null, slice);
+    if (mx - mn < 1e-9) return;
+    ctx.beginPath();
+    ctx.strokeStyle = "#1C7293"; ctx.lineWidth = 2;
+    for (var i = 0; i < n; i++) {
+      var x = (i / (n - 1)) * cv.width;
+      var y = cv.height - ((slice[i] - mn) / (mx - mn)) * (cv.height - 10) - 5;
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.stroke();
+  }
+
+  ui.startCam.addEventListener("click", async function () {
+    ui.startCam.disabled = true;
+    ui.camResult.innerHTML = "";
+    ui.camStatus.textContent = "Requesting camera…";
+    capture = new CAP.AFCapture(ui.cam);
+    capture.onTick = function (elapsed, samples) {
+      var left = Math.max(0, CAP.TARGET_SECONDS - elapsed);
+      ui.countdown.textContent = left.toFixed(0) + "s";
+      if (elapsed > 1.5) ui.camStatus.textContent = "Measuring — keep your finger still.";
+      drawWave(samples);
+      if (left <= 0) finishCapture();
+    };
+    try {
+      var info = await capture.start();
+      ui.camStage.classList.add("live");
+      ui.camStatus.textContent = info.torch
+        ? "Flash on. Keep your finger over the lens."
+        : "Couldn't turn the flash on — keep your finger still in good light.";
+    } catch (e) {
+      ui.startCam.disabled = false;
+      ui.camStatus.textContent = "";
+      ui.camResult.innerHTML = warn("bad", "Camera unavailable",
+        "Your browser refused camera access (" + (e && e.name ? e.name : "unknown") + "). "
+      + "The camera needs an https:// page and permission. You can skip this step — the "
+      + "rest of the assessment works without it.");
+      showCamNext();
+    }
+  });
+
+  var finished = false;
+  function finishCapture() {
+    if (finished) return;
+    finished = true;
+    capture.stop();
+    ui.camStage.classList.remove("live");
+    ui.camStatus.textContent = "Analysing rhythm…";
+    setTimeout(function () {
+      var res;
+      try {
+        res = CAP.analyseCapture(capture.samples, window.AF_MODEL);
+      } catch (e) {
+        res = { outcome: "unusable", sets_af: null,
+                headline: "Something went wrong analysing the recording",
+                detail: String(e && e.message || e) };
+      }
+      state.af = res;
+      renderCamResult(res);
+      ui.camStatus.textContent = "";
+      ui.countdown.textContent = "—";
+      ui.startCam.disabled = false;
+      ui.startCam.textContent = "Record again";
+      finished = false;
+      showCamNext();
+    }, 30);
+  }
+
+  function warn(kind, title, body) {
+    return '<div class="warnbox ' + kind + '"><b>' + title + '</b>' + body + '</div>';
+  }
+
+  function renderCamResult(res) {
+    var hr = res.hr ? ("  Heart rate " + Math.round(res.hr) + " bpm.") : "";
+    if (res.outcome === "regular") {
+      ui.camResult.innerHTML = warn("good", res.headline, res.detail + hr);
+      // A regular reading resolves AF only if the user hadn't already answered it.
+      if (state.profile.atrial_fib === null || state.profile.atrial_fib === undefined) {
+        state.profile.atrial_fib = false;
+      }
+    } else if (res.outcome === "irregular") {
+      ui.camResult.innerHTML = warn("bad", res.headline, res.detail + hr);
+      // deliberately does not touch state.profile.atrial_fib
+    } else {
+      ui.camResult.innerHTML = warn("", res.headline, res.detail);
+    }
+    state.estimates.afterCamera = R.estimate(state.profile, { n: 20000 });
+  }
+
+  function showCamNext() { ui.camNextRow.style.display = "flex"; }
+
+  ui.skipCam.addEventListener("click", function () {
+    state.af = { outcome: "skipped", sets_af: null,
+                 headline: "Pulse check skipped", detail: "" };
+    state.estimates.afterCamera = R.estimate(state.profile, { n: 20000 });
+    if (capture) capture.stop();
+    showStep(3);
+  });
+  ui.toStep3.addEventListener("click", function () {
+    if (capture) capture.stop();
+    showStep(3);
+  });
+
+  /* ---------------------------------------------------------- step 3 ---- */
+  ui.drop.addEventListener("click", function () { ui.fileInput.click(); });
+  ui.fileInput.addEventListener("change", async function () {
+    var f = ui.fileInput.files && ui.fileInput.files[0];
+    if (!f) return;
+    ui.ocrStatus.textContent = "Reading the image on your device…";
+    ui.ocrResult.innerHTML = "";
+    try {
+      var out = await DOC.scanImage(f, window.MEDICATIONS, function (p) {
+        ui.ocrStatus.textContent = "Reading… " + Math.round(p * 100) + "%";
+      });
+      ui.ocrStatus.textContent = "";
+      state.docFindings = out;
+      renderProposals(out);
+    } catch (e) {
+      ui.ocrStatus.textContent = "";
+      ui.ocrResult.innerHTML = warn("", "Couldn't read that image",
+        "The text reader failed (" + String(e && e.message || e) + "). You can try a "
+      + "sharper, better-lit photo, or just continue — this step is optional.");
+    }
+  });
+
+  function renderProposals(out) {
+    if (out.nothing_found) {
+      ui.ocrResult.innerHTML = warn("", "Nothing recognised",
+        "No medicines or lab values were found in that image. Try a sharper photo of the "
+      + "box front or the results table — or skip this step, it's optional.");
+      return;
+    }
+    var html = "";
+    out.proposals.forEach(function (p, i) {
+      html += '<div class="proposal" data-i="' + i + '">'
+            + '<div class="p-reason">' + p.reason + '</div>'
+            + '<div class="p-q">' + p.prompt + '</div>'
+            + '<div class="toggle prop-toggle" data-i="' + i + '">'
+            + '<button type="button" data-v="yes">Yes</button>'
+            + '<button type="button" data-v="no">No</button>'
+            + '<button type="button" data-v="skip" class="unsure">Skip</button>'
+            + '</div></div>';
+    });
+    ui.ocrResult.innerHTML = html;
+
+    ui.ocrResult.querySelectorAll(".prop-toggle").forEach(function (g) {
+      var idx = parseInt(g.getAttribute("data-i"), 10);
+      g.querySelectorAll("button").forEach(function (b) {
+        b.addEventListener("click", function () {
+          g.querySelectorAll("button").forEach(function (x) { x.classList.remove("active"); });
+          b.classList.add("active");
+          applyProposal(out.proposals[idx], b.getAttribute("data-v"));
+        });
+      });
+    });
+  }
+
+  function applyProposal(p, answer) {
+    state.docApplied = state.docApplied.filter(function (a) { return a.p !== p; });
+    if (answer === "skip") return;
+    state.docApplied.push({ p: p, answer: answer });
+
+    if (!p.field) return;
+    if (p.question_only) {
+      // a hint the user has now confirmed or denied outright
+      if (answer === "yes") state.profile[p.field] = true;
+      else if (answer === "no" && state.profile[p.field] === null) state.profile[p.field] = false;
+      return;
+    }
+    if (answer === "yes") {
+      state.profile[p.field] = (p.value === null ? true : p.value);
+    } else if (answer === "no" && p.value === true) {
+      state.profile[p.field] = false;
+    }
+  }
+
+  /* --------------------------------------------------------- results ---- */
+  function fmt(x) { return x.toFixed(x < 1 ? 2 : 1) + "%"; }
+
+  function bandFor(pct, floorPct) {
+    var ratio = floorPct > 0 ? pct / floorPct : 1;
+    if (ratio < 1.25) return ["Close to the floor for your age", "greenbg", "green"];
+    if (ratio < 2.0) return ["Moderately above the floor for your age", "amberbg", "amber"];
+    return ["Well above the floor for your age", "redbg", "red"];
+  }
+
+  ui.toResults.addEventListener("click", function () { renderResults(); showStep(4); });
+
+  function renderResults() {
+    var p = state.profile;
+    var est = R.estimate(p, { n: 20000 });
+    state.estimates.final = est;
+
+    var cohort = 100 * window.RISK_MODEL.sets[window.RISK_MODEL.default_set]
+                          .sexes[p.sex].cohort_avg_5yr_risk;
+    var floorProfile = { age: p.age, sex: p.sex, sbp: 110, on_htn_meds: false,
+                         diabetes: false, current_smoker: false, prevalent_cvd: false,
+                         atrial_fib: false, smokeless_tobacco: false };
+    var floorPct = 100 * R.risk(floorProfile);
+
+    if (est.is_certain) {
+      ui.riskDisplay.innerHTML = '<div class="risk-pct">' + fmt(est.point_pct) + "</div>";
+      ui.riskLabel.textContent = "estimated probability of a first stroke in the next 5 years";
+    } else {
+      ui.riskDisplay.innerHTML = '<div class="risk-range">' + fmt(est.low_pct) + " – "
+                               + fmt(est.high_pct) + "</div>";
+      ui.riskLabel.textContent = "likely range for your 5-year stroke risk, given what you told us";
+    }
+
+    var b = bandFor(est.point_pct, floorPct);
+    var cs = getComputedStyle(document.documentElement);
+    ui.riskBand.textContent = b[0];
+    ui.riskBand.style.background = cs.getPropertyValue("--" + b[1]);
+    ui.riskBand.style.color = cs.getPropertyValue("--" + b[2]);
+
+    var per1000 = Math.round(est.point_pct * 10);
+    ui.plainly.innerHTML = "Out of 1,000 people who answered exactly as you did, about <b>"
+      + per1000 + "</b> would be expected to have a stroke in the next five years, and about <b>"
+      + (1000 - per1000) + "</b> would not."
+      + (est.is_certain ? "" : " Because some answers are still unknown, the honest answer is a range.");
+
+    ui.optimalVal.textContent = fmt(floorPct);
+    ui.cohortVal.textContent = fmt(cohort);
+
+    renderContributions();
+
+    if (est.value_of_information && est.value_of_information.length) {
+      ui.voiList.innerHTML = est.value_of_information.map(function (r) {
+        var s = Math.round(100 * r.variance_share);
+        return '<div class="voi-row"><div class="voi-bar"><i style="width:'
+             + Math.max(2, s) + '%"></i></div><div class="voi-share">' + s + '%</div>'
+             + '<div class="voi-text">Find out <b>' + r.label + '</b>'
+             + '<span class="how">' + r.how_to_find_out + '</span></div></div>';
+      }).join("");
+      ui.voiPanel.style.display = "block";
+    } else ui.voiPanel.style.display = "none";
+
+    if (est.is_certain) {
+      var cf = R.counterfactuals(p);
+      if (cf.options.length) {
+        ui.cfList.innerHTML = cf.options.map(function (o) {
+          var h = '<div class="cf-row"><div class="cf-head"><b>' + o.change + "</b>";
+          if (o.absolute_reduction_pct_points !== null)
+            h += '<span class="cf-delta">' + fmt(o.new_risk_pct) + "</span>";
+          h += "</div>";
+          if (o.absolute_reduction_pct_points !== null)
+            h += '<div class="cf-caveat">Would lower the estimate by '
+               + o.absolute_reduction_pct_points.toFixed(2) + " percentage points ("
+               + Math.round(100 * o.relative_reduction) + "% lower). " + (o.caveat || "") + "</div>";
+          else if (o.caveat) h += '<div class="cf-caveat">' + o.caveat + "</div>";
+          return h + "</div>";
+        }).join("");
+        ui.cfPanel.style.display = "block";
+      } else ui.cfPanel.style.display = "none";
+    } else ui.cfPanel.style.display = "none";
+
+    var w = "";
+    est.applicability.notes.forEach(function (n) { w += warn("", "Worth knowing", n); });
+    if (est.applicability.status === "extrapolation") {
+      w += warn("", "Outside the model's validated range",
+        "Everyone used to build this model was 55 or older. Below that age the figure is an "
+      + "extrapolation rather than a calibrated probability — treat it as a direction, not a number.");
+    }
+    if (state.af && state.af.outcome === "irregular") {
+      w += warn("bad", "Your pulse reading was irregular",
+        "This has deliberately NOT been counted as atrial fibrillation in the number above, "
+      + "because a phone camera cannot confirm it. Please ask a doctor for an ECG. If AF were "
+      + "confirmed, your 5-year risk would be materially higher than shown.");
+    }
+    ui.warnings.innerHTML = w;
+
+    var afm = window.AF_MODEL;
+    ui.modelBadge.innerHTML =
+      "<b>How this was produced.</b> Risk: Cox proportional-hazards model, "
+    + "1 &minus; S&#8320;(5)^exp(LP &minus; M), coefficients from "
+    + window.RISK_MODEL.sets[window.RISK_MODEL.default_set].label + " ("
+    + window.RISK_MODEL.citation.paper + ", <a href='"
+    + window.RISK_MODEL.citation.open_access_full_text + "' target='_blank' rel='noopener'>open access</a>). "
+    + "Published c-statistic 0.62&ndash;0.78 &mdash; useful for ranking, far from certainty for an "
+    + "individual, and calibration is meaningfully worse for Black participants in the source data. "
+    + "<br><br><b>Rhythm check:</b> logistic model on pulse-interval features, trained on the "
+    + "MIT-BIH Atrial Fibrillation Database and validated leave-one-patient-out (AUROC "
+    + afm.performance.auroc_record_held_out.toFixed(3) + ", sensitivity "
+    + Math.round(100 * afm.performance.sensitivity_at_threshold) + "%, specificity "
+    + Math.round(100 * afm.performance.specificity_at_threshold) + "%). Those figures come from "
+    + "clinical ECG recordings, not from phone video of your finger, and this app's capture path "
+    + "has not been validated against human subjects. That is why a regular reading is used to "
+    + "rule AF out and an irregular one is only ever a referral."
+    + "<br><br><b>Privacy:</b> the risk model, the rhythm analysis and the text recognition all run "
+    + "in this browser. No answer, video frame or photograph is uploaded.";
+  }
+
+  function renderContributions() {
+    var q = state.estimates.questionnaire, f = state.estimates.final;
+    function span(e) {
+      return e.is_certain ? fmt(e.point_pct) : fmt(e.low_pct) + "–" + fmt(e.high_pct);
+    }
+    var rows = [];
+
+    rows.push({ on: true, title: "Questionnaire",
+      note: "Age, sex, blood pressure and history gave a starting estimate of <b>"
+          + span(q) + "</b>." });
+
+    if (!state.af || state.af.outcome === "skipped") {
+      rows.push({ on: false, title: "Pulse rhythm check — skipped",
+        note: "Atrial fibrillation stayed unknown, which keeps the range wider than it needs to be." });
+    } else if (state.af.outcome === "regular") {
+      rows.push({ on: true, title: "Pulse rhythm check — regular",
+        note: "Your pulse looked regular, so atrial fibrillation was ruled out"
+            + (state.af.hr ? " (heart rate " + Math.round(state.af.hr) + " bpm)" : "") + "." });
+    } else if (state.af.outcome === "irregular") {
+      rows.push({ on: false, title: "Pulse rhythm check — irregular, not counted",
+        note: "An irregular reading cannot confirm AF on a phone camera, so the estimate was "
+            + "left unchanged rather than raised. Get an ECG." });
+    } else {
+      rows.push({ on: false, title: "Pulse rhythm check — unusable",
+        note: "The signal wasn't clean enough to judge the rhythm, so nothing was changed." });
+    }
+
+    if (!state.docApplied.length) {
+      rows.push({ on: false, title: "Documents — not used",
+        note: "No medicines or lab values were confirmed." });
+    } else {
+      var applied = state.docApplied.filter(function (a) { return a.answer !== "skip"; });
+      rows.push({ on: true, title: "Documents — " + applied.length + " confirmed",
+        note: applied.map(function (a) {
+          return a.p.reason + " → you answered <b>" + a.answer + "</b>";
+        }).join("<br>") });
+    }
+
+    rows.push({ on: true, title: "Final estimate",
+      note: "<b>" + span(f) + "</b>"
+          + (span(f) === span(q) ? " — unchanged from the questionnaire alone."
+                                 : " — refined from " + span(q) + " by the steps above.") });
+
+    ui.contribList.innerHTML = rows.map(function (r) {
+      return '<div class="contrib"><div class="dot' + (r.on ? "" : " off") + '"></div>'
+           + '<div><b>' + r.title + '</b><span class="c-note">' + r.note + "</span></div></div>";
+    }).join("");
+  }
+
+  ui.restart.addEventListener("click", function () { location.reload(); });
+})();
+
+</script>
+</body>
+</html>

@@ -1,6 +1,6 @@
 /* Validation suite for the rPPG DSP core.
    Feeds synthetic signals with a KNOWN heart rate and checks recovery. */
-const RPPG = require("./rppg_core.js");
+const RPPG = require("../src/rppg_core.js");
 
 function run(label, opts, mode) {
   const s = RPPG.synth(opts);

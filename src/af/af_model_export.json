@@ -1,0 +1,161 @@
+{
+  "_source": "MIT-BIH Atrial Fibrillation Database (PhysioNet afdb), 25 records",
+  "_validation": "leave-one-record-out cross-validation",
+  "feature_names": [
+    "rmssd_norm",
+    "cv",
+    "prr50",
+    "prr70",
+    "shannon",
+    "sampen",
+    "sd1_sd2",
+    "hr"
+  ],
+  "coef": [
+    1.3821884384182197,
+    -0.7022809529373184,
+    6.213386629073932,
+    -1.398281121089323,
+    1.9874372370570004,
+    1.1172451100683438,
+    -5.810364466966805,
+    1.964563829174299
+  ],
+  "intercept": -3.866954175180667,
+  "mean": [
+    0.17306268078384818,
+    0.12578243665548322,
+    0.36579971465444633,
+    0.31856146202616165,
+    0.7777180552379925,
+    1.7693348223862044,
+    0.966842809370249,
+    81.54122946372382
+  ],
+  "scale": [
+    0.13593303717179836,
+    0.09360771676226713,
+    0.33525923800990654,
+    0.30913505913756345,
+    0.17799654476861332,
+    1.3760210849862806,
+    1.0515983617167752,
+    18.61768886792899
+  ],
+  "threshold_rule_out": 0.6091149925853044,
+  "window_seconds": 60,
+  "min_beats": 20,
+  "performance": {
+    "auroc_record_held_out": 0.9902835571130713,
+    "sensitivity_at_threshold": 0.9498426799925968,
+    "specificity_at_threshold": 0.9739182956292555,
+    "ppv_npv_by_prevalence": {
+      "0.02": {
+        "ppv": 0.4263502042837943,
+        "npv": 0.9989500720396393
+      },
+      "0.05": {
+        "ppv": 0.6571509093140242,
+        "npv": 0.9972967724089085
+      },
+      "0.1": {
+        "ppv": 0.8018405410986718,
+        "npv": 0.994310275773822
+      }
+    },
+    "per_record_auroc_min": 0.9309813645927262,
+    "per_record_auroc_max": 1.0,
+    "noise_curve": [
+      {
+        "condition": "ECG ground truth (no degradation)",
+        "jitter_ms": 0,
+        "miss_rate": 0.0,
+        "fps": null,
+        "auroc": 0.9902835571130713,
+        "sens": 0.9498426799925968,
+        "spec": 0.9739182956292555
+      },
+      {
+        "condition": "30 fps grid only (no interpolation)",
+        "jitter_ms": 0,
+        "miss_rate": 0.0,
+        "fps": 30,
+        "auroc": 0.9918067443817473,
+        "sens": 0.9500277623542477,
+        "spec": 0.9688134848734421
+      },
+      {
+        "condition": "30 fps + 8 ms jitter (parabolic interp)",
+        "jitter_ms": 8,
+        "miss_rate": 0.0,
+        "fps": null,
+        "auroc": 0.9899993783159594,
+        "sens": 0.9502128447158986,
+        "spec": 0.9694140903849322
+      },
+      {
+        "condition": "60 fps + 5 ms jitter",
+        "jitter_ms": 5,
+        "miss_rate": 0.0,
+        "fps": null,
+        "auroc": 0.9906245026057626,
+        "sens": 0.9496575976309458,
+        "spec": 0.973093185437373
+      },
+      {
+        "condition": "15 ms jitter",
+        "jitter_ms": 15,
+        "miss_rate": 0.0,
+        "fps": null,
+        "auroc": 0.9880203863581851,
+        "sens": 0.9501203035350732,
+        "spec": 0.9568392729668882
+      },
+      {
+        "condition": "25 ms jitter",
+        "jitter_ms": 25,
+        "miss_rate": 0.0,
+        "fps": null,
+        "auroc": 0.9826302358074491,
+        "sens": 0.9500277623542477,
+        "spec": 0.9249945091148694
+      },
+      {
+        "condition": "40 ms jitter",
+        "jitter_ms": 40,
+        "miss_rate": 0.0,
+        "fps": null,
+        "auroc": 0.9699239282534804,
+        "sens": 0.9500277623542477,
+        "spec": 0.8738402415591545
+      },
+      {
+        "condition": "8 ms jitter + 2% missed beats",
+        "jitter_ms": 8,
+        "miss_rate": 0.02,
+        "fps": null,
+        "auroc": 0.9885522114028994,
+        "sens": 0.9496482784154017,
+        "spec": 0.961137336699967
+      },
+      {
+        "condition": "8 ms jitter + 5% missed beats",
+        "jitter_ms": 8,
+        "miss_rate": 0.05,
+        "fps": null,
+        "auroc": 0.9899543454438577,
+        "sens": 0.950309984269455,
+        "spec": 0.9665623455773349
+      },
+      {
+        "condition": "25 ms jitter + 5% missed beats",
+        "jitter_ms": 25,
+        "miss_rate": 0.05,
+        "fps": null,
+        "auroc": 0.9830003411457576,
+        "sens": 0.9499398537984639,
+        "spec": 0.9264261791028386
+      }
+    ]
+  }
+}

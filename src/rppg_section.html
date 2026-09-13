@@ -7,16 +7,6 @@
       <p class="pulse-sep"><b>This is measured separately and is not fed into the stroke risk score above.</b> The risk model was trained only on questionnaire data, so quietly mixing a heart-rate reading into its output would misrepresent what that model actually validated.</p>
     </div>
 
-    <div class="mode-row">
-      <button type="button" class="mode-btn active" data-mode="finger">
-        <span class="mode-title">Fingertip + flash</span>
-        <span class="mode-desc">Recommended — strongest signal</span>
-      </button>
-      <button type="button" class="mode-btn" data-mode="face">
-        <span class="mode-title">Face (contactless)</span>
-        <span class="mode-desc">No contact, but far more sensitive to motion &amp; lighting</span>
-      </button>
-    </div>
 
     <div class="mode-help" id="modeHelp">
       Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for 25 seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead.
@@ -25,7 +15,6 @@
     <div class="capture-area" id="captureArea">
       <div class="cam-wrap">
         <video id="cam" playsinline muted></video>
-        <div class="face-guide" id="faceGuide"></div>
         <div class="cam-overlay" id="camOverlay">Camera is off</div>
       </div>
       <div class="capture-side">
@@ -77,6 +66,6 @@
       <p><b>This feature has not been validated against a medical-grade reference on real people.</b> Everything below comes from published literature and from our own synthetic-signal testing, not from human trials we conducted.</p>
       <p><b>Skin tone affects accuracy, and this matters here.</b> Melanin absorbs light, which weakens the very signal this technique depends on. A 2025 review of 100 rPPG studies found mean error rising from about <b>5.2 bpm on lighter skin (Fitzpatrick I–III) to 14.1 bpm on darker skin (Fitzpatrick V–VI)</b>, with a cited meta-analysis reporting a more-than-twofold degradation. Those same datasets under-represent darker skin tones — under 25% of participants. A UCLA group concluded that properly fixing this needs additional hardware (radar fused with camera), not just better software.</p>
       <p><b>What we did about it.</b> Fingertip-with-flash is the default mode precisely because it floods the tissue with light instead of relying on ambient reflection, which raises signal strength for everyone and disproportionately helps where reflectance is lower. The processing uses POS and CHROM rather than the naive green-channel method. Most importantly, a reading is only reported as reliable if it is <b>stable across independent time windows and agrees between two different algorithms</b> — in our synthetic testing this reduced confidently-wrong readings from 13 in 60 to 0 in 60 under simulated darker-skin, in-motion conditions. When it cannot get a trustworthy reading it says so instead of showing a number.</p>
-      <p><b>Known irreducible limit.</b> A rhythmic disturbance at a steady, heart-rate-plausible frequency (a moving vehicle, rocking, a flickering light) can be mistaken for a pulse in face mode. This is physically ambiguous for a single camera and we have not solved it — it is another reason fingertip mode is the default.</p>
+      <p><b>Why face mode was removed.</b> Contactless face measurement relies on ambient light reflecting off skin, which makes it far more sensitive to motion and lighting, and substantially weaker where skin reflectance is lower — published rPPG error rises from about 5.2&nbsp;bpm on Fitzpatrick I–III to 14.1&nbsp;bpm on V–VI. It also had an irreducible failure mode: a rhythmic disturbance at a heart-rate-plausible frequency (a moving vehicle, rocking, a flickering light) is physically ambiguous to a single camera. Fingertip-with-flash is <i>contact</i> photoplethysmography with active illumination — a different and far more robust measurement — so it is now the only mode offered.</p>
     </div>
   </div>

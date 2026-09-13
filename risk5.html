@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BrainShield — 5-Year Stroke Risk</title>
+<style>
+  :root{
+    --navy:#21295C; --blue:#065A82; --teal:#1C7293; --mint:#6FD6C5;
+    --ink:#1B2430; --muted:#5B6472; --card:#F2F6F8; --white:#FFFFFF;
+    --danger:#B85042; --border:#E1E7EC; --amber:#8A5A00; --amberbg:#FDF2DC;
+    --greenbg:#E4F3EE; --green:#1E7B5C; --redbg:#FBE7E5; --red:#96271C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:Calibri,"Segoe UI",Arial,sans-serif; background:var(--white); color:var(--ink); line-height:1.5;}
+  header{background:var(--navy); color:var(--white); padding:34px 8vw 30px;}
+  header .kicker{color:var(--mint); font-weight:700; letter-spacing:3px; font-size:13px; margin-bottom:8px;}
+  header h1{font-family:Cambria,Georgia,serif; font-size:34px; margin:0 0 8px;}
+  header p{color:#B9D6E8; font-size:15px; margin:0; max-width:780px;}
+  main{max-width:920px; margin:0 auto; padding:32px 6vw 80px;}
+  .emergency{background:#FBE7E5; border:1px solid #E8B4AE; color:#8A231A; padding:14px 18px;
+    border-radius:10px; font-size:13.5px; margin-bottom:20px;}
+  .emergency b{display:block; margin-bottom:4px; font-size:14px;}
+  .disclaimer{background:#FBF3E8; border:1px solid #E9D6B8; color:#7A5A24; padding:14px 18px;
+    border-radius:10px; font-size:13.5px; margin-bottom:30px;}
+  .section{margin-bottom:30px;}
+  .section h2{font-family:Cambria,Georgia,serif; font-size:20px; color:var(--navy); margin:0 0 4px;}
+  .section .sub{color:var(--muted); font-size:13px; margin:0 0 16px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  @media (max-width:640px){ .grid{grid-template-columns:1fr;} }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field.full{grid-column:1 / -1;}
+  label{font-size:13.5px; font-weight:700;}
+  .hint{font-size:12px; color:var(--muted); margin-top:-2px;}
+  input[type="number"]{padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    font-size:14.5px; font-family:inherit; color:var(--ink); background:var(--white); width:100%;}
+  input[type="number"]:focus{outline:2px solid var(--teal); outline-offset:1px;}
+  input[type="number"]:disabled{background:#F4F6F8; color:#A8B0BA;}
+  .toggle{display:flex; gap:8px;}
+  .toggle button{flex:1; padding:10px 6px; border-radius:8px; border:1px solid var(--border);
+    background:var(--white); color:var(--muted); font-family:inherit; font-size:13.5px;
+    font-weight:700; cursor:pointer;}
+  .toggle button.active{background:var(--teal); border-color:var(--teal); color:var(--white);}
+  .toggle button.unsure.active{background:#8792A6; border-color:#8792A6;}
+  #submitBtn{width:100%; padding:16px; font-size:16px; font-weight:700; color:var(--white);
+    background:var(--navy); border:none; border-radius:10px; cursor:pointer; font-family:inherit;}
+  #submitBtn:hover{background:#161c47;}
+  #results{display:none; margin-top:36px;}
+  .result-card{background:var(--card); border-radius:14px; padding:30px; text-align:center;}
+  .risk-pct{font-family:Cambria,Georgia,serif; font-size:58px; font-weight:700; color:var(--navy); line-height:1.05;}
+  .risk-range{font-family:Cambria,Georgia,serif; font-size:40px; font-weight:700; color:var(--navy); line-height:1.1;}
+  .risk-label{font-size:14px; color:var(--muted); margin-top:6px;}
+  .risk-band{display:inline-block; margin-top:14px; padding:6px 16px; border-radius:20px;
+    font-size:13px; font-weight:700;}
+  .plainly{margin-top:18px; font-size:14.5px; color:var(--ink); max-width:560px;
+    margin-left:auto; margin-right:auto;}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px;}
+  @media (max-width:560px){ .compare{grid-template-columns:1fr;} }
+  .compare .box{background:var(--white); border:1px solid var(--border); border-radius:10px;
+    padding:16px; text-align:center;}
+  .compare .box .val{font-family:Cambria,Georgia,serif; font-size:26px; font-weight:700; color:var(--teal);}
+  .compare .box .lbl{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .panel{margin-top:22px; background:var(--white); border:1px solid var(--border);
+    border-radius:12px; padding:20px;}
+  .panel h3{font-family:Cambria,Georgia,serif; font-size:17px; color:var(--navy); margin:0 0 4px;}
+  .panel .psub{font-size:12.5px; color:var(--muted); margin:0 0 14px;}
+  .voi-row{display:flex; align-items:flex-start; gap:12px; padding:11px 0; border-top:1px solid var(--border);}
+  .voi-row:first-of-type{border-top:none;}
+  .voi-bar{flex:0 0 92px; height:8px; background:#E8EDF1; border-radius:4px; margin-top:6px; overflow:hidden;}
+  .voi-bar i{display:block; height:100%; background:var(--teal);}
+  .voi-text{flex:1; font-size:13.5px;}
+  .voi-text b{color:var(--navy);}
+  .voi-text .how{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .voi-share{flex:0 0 52px; text-align:right; font-size:13px; font-weight:700; color:var(--teal); margin-top:2px;}
+  .cf-row{padding:12px 0; border-top:1px solid var(--border); font-size:13.5px;}
+  .cf-row:first-of-type{border-top:none;}
+  .cf-head{display:flex; justify-content:space-between; gap:12px; align-items:baseline;}
+  .cf-head b{color:var(--navy);}
+  .cf-delta{font-family:Cambria,Georgia,serif; font-size:17px; font-weight:700; color:var(--green); white-space:nowrap;}
+  .cf-caveat{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .warnbox{margin-top:18px; background:var(--amberbg); border:1px solid #E9D6B8; color:var(--amber);
+    border-radius:10px; padding:14px 16px; font-size:13px;}
+  .warnbox b{display:block; margin-bottom:3px;}
+  .model-badge{margin-top:28px; padding:16px 18px; border-radius:10px; background:var(--card);
+    border:1px solid var(--border); font-size:12.5px; color:var(--muted); line-height:1.65;}
+  .model-badge b{color:var(--navy);}
+  .model-badge a{color:var(--teal);}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">BRAINSHIELD</div>
+  <h1>5-Year Stroke Risk</h1>
+  <p>Your estimated probability of having a first stroke within the next five years,
+     from a published survival model built on 23,691 adults followed prospectively with
+     physician-adjudicated stroke events. Runs entirely in your browser — nothing is sent anywhere.</p>
+</header>
+
+<main>
+  <div class="emergency">
+    <b>If symptoms are happening right now, stop and call emergency services.</b>
+    Sudden face drooping, arm weakness, or speech difficulty — even if it passes — is a
+    medical emergency. This page estimates risk over years. It cannot tell you anything
+    about what is happening today.
+  </div>
+
+  <div class="disclaimer">
+    <b>This is not a diagnosis.</b> It is a statistical estimate for a group of people who
+    share your answers, not a prediction about you personally. It does not replace a
+    clinician, and no decision about medication should be made from this number.
+  </div>
+
+  <form id="riskForm">
+    <div class="section">
+      <h2>About you</h2>
+      <p class="sub">Both of these are required — the model is built separately for each sex,
+         and age carries the most weight of any input.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="age">Age (years)</label>
+          <input type="number" id="age" min="18" max="110" step="1" required />
+          <span class="hint">The model was built on adults aged 55–84.</span>
+        </div>
+        <div class="field">
+          <label>Sex</label>
+          <div class="toggle" data-field="sex">
+            <button type="button" data-value="women">Female</button>
+            <button type="button" data-value="men">Male</button>
+          </div>
+          <span class="hint">Used to pick the sex-specific equation.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Blood pressure</h2>
+      <p class="sub">If you don't know, say so. The estimate will be given as a range rather
+         than a made-up number, and we'll tell you how much measuring it would help.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="sbp">Systolic blood pressure (the upper number, mmHg)</label>
+          <input type="number" id="sbp" min="70" max="260" step="1" />
+          <div class="toggle" data-field="sbp_known" style="margin-top:6px;">
+            <button type="button" data-value="1" class="active">I know it</button>
+            <button type="button" data-value="0" class="unsure">Not sure</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you take blood-pressure medication?</label>
+          <div class="toggle" data-field="on_htn_meds">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Medical history</h2>
+      <p class="sub">"Not sure" is a legitimate answer to every one of these.</p>
+      <div class="grid">
+        <div class="field">
+          <label>Diabetes</label>
+          <div class="toggle" data-field="diabetes">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you currently smoke?</label>
+          <div class="toggle" data-field="current_smoker">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Cigarettes, bidis or hookah. Any smoking in the past year counts.</span>
+        </div>
+        <div class="field">
+          <label>Do you chew or hold tobacco in your mouth?</label>
+          <div class="toggle" data-field="smokeless_tobacco">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Gutkha, khaini, zarda, paan masala, mishri, or paan with tobacco.</span>
+        </div>
+        <div class="field">
+          <label>Existing heart or vascular disease</label>
+          <div class="toggle" data-field="prevalent_cvd">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Heart attack, angina, bypass, stent, heart failure, or poor circulation in the legs.</span>
+        </div>
+        <div class="field">
+          <label>Atrial fibrillation</label>
+          <div class="toggle" data-field="atrial_fib">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">An irregular heart rhythm diagnosed on an ECG.</span>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">Calculate my 5-year risk →</button>
+  </form>
+
+  <div id="results">
+    <div class="result-card">
+      <div id="riskDisplay"></div>
+      <div class="risk-label" id="riskLabel"></div>
+      <div class="risk-band" id="riskBand"></div>
+      <div class="plainly" id="plainly"></div>
+      <div class="compare">
+        <div class="box"><div class="val" id="optimalVal">—</div>
+          <div class="lbl">The floor for your age: someone your age and sex with none of these risk factors and healthy blood pressure</div></div>
+        <div class="box"><div class="val" id="cohortVal">—</div>
+          <div class="lbl">The average person of your sex in the study population (aged 55+)</div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="voiPanel" style="display:none;">
+      <h3>What would sharpen this estimate</h3>
+      <p class="psub">You left some answers as "not sure", so the result above is a range.
+         These are ranked by how much of that uncertainty each one accounts for.</p>
+      <div id="voiList"></div>
+    </div>
+
+    <div class="panel" id="cfPanel" style="display:none;">
+      <h3>What would change this number</h3>
+      <p class="psub">Modelled effects of changing each factor, holding everything else fixed.
+         These are associations measured in a cohort study, not guaranteed personal outcomes.</p>
+      <div id="cfList"></div>
+    </div>
+
+    <div id="warnings"></div>
+
+    <div class="model-badge" id="modelBadge"></div>
+  </div>
+</main>
+
+<script>
+window.RISK_MODEL = {"_generated_by": "src/risk/export_risk_model.py", "citation": {"paper": "Dufouil C, Beiser A, McLure LA, et al. Revised Framingham Stroke Risk Profile to Reflect Temporal Trends. Circulation. 2017;135(12):1145-1159.", "doi": "10.1161/CIRCULATIONAHA.115.021275", "pmid": "28159800", "pmcid": "PMC5504355", "open_access_full_text": "https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5504355/"}, "applicability": {"derived_age_range": [55, 84], "note": "Both coefficient sets are derived exclusively in adults aged 55 and over, stroke-free at baseline. Applying them below age 55 is EXTRAPOLATION and must be labelled as such in any output. See fsrp.applicability().", "requires_stroke_free_at_baseline": true, "outcome": "First incident stroke (ischemic or hemorrhagic), WHO definition, adjudicated."}, "known_limitations": ["Discrimination is modest: published c-statistic 0.62-0.78 depending on cohort and sex.", "Calibration is significantly worse in Black participants (Table 5).", "Both cohorts are US-based. Absolute risk will not transport to other countries without recalibrating S0 to local stroke incidence - see recalibrate.py.", "ECG-LVH was dropped from the revised model and is not an input.", "Cholesterol, BMI, physical activity and diet are NOT in this model. Their effects are largely mediated through SBP, diabetes and prevalent CVD, which are included."], "horizon_years": 5, "default_set": "REGARDS_all", "adjunct_terms": {"_README": ["Risk factors NOT in the source cohort model, added as extra terms in the linear", "predictor using published, covariate-ADJUSTED hazard ratios. This is the standard", "way a validated equation is extended (the same approach SCORE2 uses for regional", "recalibration), and it is only defensible when three things hold:", "  1. the HR comes from a meta-analysis adjusted for the same covariates the base", "     model already contains, so the effect is not double-counted;", "  2. the factor is genuinely absent from the base cohort, so there is nothing to", "     double-count in the first place;", "  3. the centering mean uses the prevalence of the population being scored.", "Each term below states which of these it satisfies and which it assumes."], "smokeless_tobacco": {"field": "smokeless_tobacco", "label": "Chewed or held tobacco (gutkha, khaini, zarda, paan masala, mishri, betel quid with tobacco)", "hazard_ratio": 1.35, "ci": [1.2, 1.5], "source": "Pooled RR for stroke in chewing-tobacco users vs non-chewers. Association of smokeless tobacco and cerebrovascular accident: a systematic review and meta-analysis of global data. J Public Health (Oxf). 2020;42(2):e150. Overall smokeless-tobacco RR was 1.17 (1.04-1.30); the chewing-tobacco subgroup, which is the dominant Indian form, was 1.35 (1.20-1.50).", "why_needed": ["The base model asks only about SMOKING. In India that misses a very large group:", "GATS-2 (2016-17) found 29.6% of men and 12.8% of women currently use smokeless", "tobacco. Those users currently score as zero tobacco risk.", "The smokeless-tobacco-attributable fraction of fatal stroke is highest in India,", "at 14.8% (same meta-analysis)."], "why_separate_from_smoking": ["Its effect is materially smaller than smoking (REGARDS smoking HR is 2.00 in men,", "1.77 in women). Folding smokeless users into the smoking question would", "OVERESTIMATE their risk by roughly 50%. It is a separate question with its own", "coefficient."], "means": {"_source": "GATS-2 India 2016-17, current smokeless tobacco use", "men": 0.296, "women": 0.128, "confidence": "high - nationally representative survey, n>74,000"}, "assumptions_and_limits": ["ASSUMED INDEPENDENT of the base model's covariates. The base cohorts (REGARDS,", "Framingham) are US populations where smokeless tobacco use is uncommon and was", "not a modelled covariate, so there is little to double-count - condition 2 holds.", "The meta-analysis pools studies with heterogeneous adjustment, so condition 1 is", "only partly satisfied. Treat this term as the least certain part of the estimate.", "Dual users (smoking AND chewing) get both terms, which may overstate the combined", "effect if the two share a mechanism."], "centering": {"centre_at": 0, "why": ["The adjunct term is centred at ZERO, not at Indian prevalence.", "S0 is anchored to the base cohort (REGARDS), where smokeless tobacco use is", "uncommon and was not a covariate - so NON-USE is already the reference level that", "S0 was calibrated against. A non-user therefore gets no adjustment, and a user gets", "+ln(1.35).", "Centring on Indian prevalence instead would hand every Indian non-user a discount", "below the US baseline, which nothing in the evidence supports.", "The 'means' block above is used ONLY as a prior when the user answers 'not sure'."]}}}, "population_priors": {"_README": ["Priors used ONLY to propagate uncertainty when a user answers 'not sure'. They do", "not change the coefficients, and they do not affect anyone who answers every", "question. Selecting the wrong population makes unknown-input ranges wrong, not the", "point estimates."], "US_REGARDS": {"label": "US, REGARDS cohort (default)", "note": "Read from the coefficient set's own means block; see uncertainty.py _priors()."}, "India": {"label": "India, national surveys", "_WARNING": ["These are assembled from several national surveys, not one cohort, and one of them", "is DERIVED rather than measured. Check each before relying on it."], "current_smoking": {"men": 0.19, "women": 0.02, "source": "GATS-2 India 2016-17, current smoking", "confidence": "high"}, "smokeless_tobacco": {"men": 0.296, "women": 0.128, "source": "GATS-2 India 2016-17, current smokeless tobacco use", "confidence": "high"}, "diabetes": {"men": 0.119, "women": 0.078, "source": "NFHS-5 (2019-21), highest age band reported: men >50y 11.9%, women 45-49y 7.8%", "confidence": "medium - NFHS-5 likely UNDERESTIMATES relative to ICMR-INDIAB measured prevalence (~11-12% nationally, higher in urban areas). Revise upward if INDIAB age/sex bands are available."}, "htn_treatment": {"men": 0.132, "women": 0.137, "source": "DERIVED, not measured: hypertension prevalence (NFHS-5: men >50y 41.4%, women 45-49y 31.2%) multiplied by awareness (NFHS-5: men 32%, women 44%).", "confidence": "LOW - this is the weakest number in the file. Awareness is an upper bound on treatment, so the true figure is lower still. What matters is the direction, which is not in doubt: far fewer Indian adults are on BP medication than the ~49-55% in REGARDS."}, "_the_important_consequence": ["Only 32% of hypertensive Indian men and 44% of women are even AWARE of it, against", "roughly half of REGARDS participants being on treatment. So in India 'I don't know", "my blood pressure' is the normal case, not the exception.", "That makes the uncertainty-propagation and 'go measure this first' features more", "valuable here than in the population the model was built on, not less."]}}, "sets": {"REGARDS_all": {"label": "REGARDS, all participants, age 55+", "sexes": {"men": {"betas": {"age": 0.05423242908253617, "current_smoking": 0.6931471805599453, "prevalent_cvd": 0.2700271372130602, "atrial_fib": 0.4824261492442928, "age_ge65": 0.29266961396282004, "dm_age_lt65": 0.6626879730752367, "dm_age_ge65": 0.13976194237515863, "htn_treatment": 0.23111172096338664, "sbp_untreated": 0.00861776962410524, "sbp_treated": 0.004879016416943205}, "M": 5.042969936442757, "S0_5yr": 0.9730950186394897, "cohort_avg_5yr_risk": 0.031, "priors": {"smokeless_tobacco": 0.296, "on_htn_meds": 0.492, "diabetes": 0.227, "current_smoker": 0.131, "prevalent_cvd": 0.241, "atrial_fib": 0.088, "sbp_untreated_mean": 126, "sbp_treated_mean": 132, "sbp_sd": 17.0}}, "women": {"betas": {"age": 0.060431596685332954, "current_smoking": 0.5709795465857378, "prevalent_cvd": 0.41871033485818504, "atrial_fib": 0.45107561936021673, "age_ge65": 0.36464311358790924, "dm_age_lt65": 0.5068176023684519, "dm_age_ge65": 0.10436001532424286, "htn_treatment": 0.17395330712343798, "sbp_untreated": 0.014842000511827321, "sbp_treated": 0.016551443847757332}, "M": 6.526487020616369, "S0_5yr": 0.9780347307629503, "cohort_avg_5yr_risk": 0.027, "priors": {"smokeless_tobacco": 0.128, "on_htn_meds": 0.548, "diabetes": 0.214, "current_smoker": 0.133, "prevalent_cvd": 0.128, "atrial_fib": 0.085, "sbp_untreated_mean": 123, "sbp_treated_mean": 131, "sbp_sd": 17.0}}}}, "NewFHS": {"label": "Contemporary Framingham (the published 'new FSRP')", "sexes": {"men": {"betas": {"age": 0.0494696241836107, "current_smoking": 0.47000362924573563, "prevalent_cvd": 0.45107561936021673, "atrial_fib": 0.0769610411361284, "age_ge65": 0.4574248470388755, "dm_age_lt65": 1.3532545070416904, "dm_age_ge65": 0.34358970439007686, "htn_treatment": 0.8241754429663494, "sbp_untreated": 0.02700271372130602, "sbp_treated": 0.009531017980432493}, "M": 6.76825283316858, "S0_5yr": 0.9824862259607645, "cohort_avg_5yr_risk": 0.029, "priors": {"smokeless_tobacco": 0.296, "on_htn_meds": 0.421, "diabetes": 0.151, "current_smoker": 0.124, "prevalent_cvd": 0.18, "atrial_fib": 0.071, "sbp_untreated_mean": 132, "sbp_treated_mean": 139, "sbp_sd": 17.0}}, "women": {"betas": {"age": 0.08796267475025636, "current_smoking": 0.5128236264286637, "prevalent_cvd": -0.030459207484708574, "atrial_fib": 1.205970806988609, "age_ge65": 0.3987761199573678, "dm_age_lt65": 1.0715836162801904, "dm_age_ge65": 0.06765864847381486, "htn_treatment": 0.131028262406404, "sbp_untreated": 0.011332868530700327, "sbp_treated": 0.0173953307123438}, "M": 8.271540094895453, "S0_5yr": 0.9886358524148506, "cohort_avg_5yr_risk": 0.022, "priors": {"smokeless_tobacco": 0.128, "on_htn_meds": 0.397, "diabetes": 0.089, "current_smoker": 0.138, "prevalent_cvd": 0.101, "atrial_fib": 0.032, "sbp_untreated_mean": 129, "sbp_treated_mean": 144, "sbp_sd": 17.0}}}, "warning": ["Provided for reproducibility of the published new FSRP, NOT recommended as the", "shipping default. Derived on only ~60-62 five-year events, which makes several", "coefficients unstable and, in two cases, clinically misleading:", "  - men, atrial fibrillation: HR 1.08 (0.61-1.94), i.e. null, when AF is one of", "    the strongest established stroke risk factors.", "  - women, prevalent CVD: HR 0.97 (0.61-1.56), i.e. protective, which is not credible.", "Also: Table 5 shows this model miscalibrates significantly outside Framingham", "(calibration chi-square 102.4 in REGARDS Black women, 90.3 in REGARDS women overall)."]}}};
+/*
+ * BrainShield — 5-year absolute stroke risk, client side.
+ *
+ * Mirrors src/risk/fsrp.py and src/risk/uncertainty.py exactly. Parity is enforced by
+ * tests/test_risk_parity.js against a fixture of Python-computed values, so this file
+ * cannot drift from the Python without the test suite failing.
+ *
+ * Model:  risk(t|x) = 1 - S0(t) ^ exp(LP(x) - M)
+ * All constants come from RISK_MODEL (generated by src/risk/export_risk_model.py from
+ * published cohort tables; see src/risk/coefficients.json for per-parameter sources).
+ */
+(function (root) {
+  "use strict";
+
+  var UNCERTAIN_FIELDS = ["sbp", "on_htn_meds", "diabetes", "atrial_fib",
+                          "prevalent_cvd", "current_smoker", "smokeless_tobacco"];
+
+  function getModel() {
+    var M = root.RISK_MODEL;
+    if (!M) throw new Error("RISK_MODEL not loaded");
+    return M;
+  }
+
+  function setFor(setName, sex) {
+    var M = getModel();
+    var s = M.sets[setName || M.default_set];
+    if (!s) throw new Error("unknown coefficient set: " + setName);
+    var e = s.sexes[sex];
+    if (!e) throw new Error("sex must be 'men' or 'women', got " + sex);
+    return e;
+  }
+
+  /* ---- linear predictor -------------------------------------------------- */
+  function linearPredictor(p, setName) {
+    var e = setFor(setName, p.sex), b = e.betas;
+    var lp = b.age * p.age;
+    if (p.age >= 65) lp += b.age_ge65;
+    if (p.current_smoker) lp += b.current_smoking;
+    if (p.prevalent_cvd) lp += b.prevalent_cvd;
+    if (p.atrial_fib) lp += b.atrial_fib;
+    if (p.diabetes) lp += (p.age >= 65) ? b.dm_age_ge65 : b.dm_age_lt65;
+    if (p.on_htn_meds) lp += b.htn_treatment + b.sbp_treated * p.sbp;
+    else lp += b.sbp_untreated * p.sbp;
+    return lp + adjunctLP(p);
+  }
+
+  /* Extra terms for factors absent from the source cohort model.
+     Centred at ZERO, not at population prevalence: smokeless tobacco use was
+     negligible in the base cohort, so non-use already is the reference level S0 was
+     calibrated against. A user gets +ln(HR); a non-user gets nothing. */
+  function adjunctLP(p) {
+    var adj = getModel().adjunct_terms;
+    var lp = 0;
+    if (adj && adj.smokeless_tobacco && p.smokeless_tobacco) {
+      lp += Math.log(adj.smokeless_tobacco.hazard_ratio);
+    }
+    return lp;
+  }
+
+  function risk(p, setName) {
+    var e = setFor(setName, p.sex);
+    return 1 - Math.pow(e.S0_5yr, Math.exp(linearPredictor(p, setName) - e.M));
+  }
+
+  /* ---- applicability ----------------------------------------------------- */
+  function applicability(p) {
+    var M = getModel(), r = M.applicability.derived_age_range;
+    var notes = [], status = "in_range";
+    if (p.age < r[0]) {
+      status = "extrapolation";
+      notes.push("Age " + Math.round(p.age) + " is below " + r[0] + ", the youngest age this "
+        + "model was derived on. Read the estimate as a rough indication of direction, "
+        + "not as a calibrated probability.");
+    } else if (p.age > r[1]) {
+      status = "extrapolation";
+      notes.push("Age " + Math.round(p.age) + " is above the derivation range (max " + r[1] + ").");
+    }
+    if (p.sbp > 180) {
+      notes.push("A systolic blood pressure above 180 mmHg needs medical attention in its "
+        + "own right, separately from any 5-year estimate.");
+    }
+    return { status: status, notes: notes, derived_age_range: r };
+  }
+
+  /* ---- deterministic RNG so results are reproducible --------------------- */
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gauss(rand) {   // Box-Muller
+    var u = 0, v = 0;
+    while (u === 0) u = rand();
+    while (v === 0) v = rand();
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  }
+
+  /* ---- uncertainty propagation ------------------------------------------- */
+  function unknownsOf(p) {
+    return UNCERTAIN_FIELDS.filter(function (f) {
+      return p[f] === null || p[f] === undefined;
+    });
+  }
+
+  function sampleRisks(p, n, seed, setName) {
+    var e = setFor(setName, p.sex), b = e.betas, pr = e.priors;
+    var rand = mulberry32(seed), out = new Float64Array(n);
+    var ge65 = p.age >= 65;
+    var adjT = getModel().adjunct_terms;
+    var adjHR = (adjT && adjT.smokeless_tobacco) ? adjT.smokeless_tobacco.hazard_ratio : null;
+
+    for (var i = 0; i < n; i++) {
+      var treated = (p.on_htn_meds === null || p.on_htn_meds === undefined)
+        ? (rand() < pr.on_htn_meds) : !!p.on_htn_meds;
+      var dm = (p.diabetes === null || p.diabetes === undefined)
+        ? (rand() < pr.diabetes) : !!p.diabetes;
+      var smk = (p.current_smoker === null || p.current_smoker === undefined)
+        ? (rand() < pr.current_smoker) : !!p.current_smoker;
+      var cvd = (p.prevalent_cvd === null || p.prevalent_cvd === undefined)
+        ? (rand() < pr.prevalent_cvd) : !!p.prevalent_cvd;
+      var af = (p.atrial_fib === null || p.atrial_fib === undefined)
+        ? (rand() < pr.atrial_fib) : !!p.atrial_fib;
+      var slt = (p.smokeless_tobacco === null || p.smokeless_tobacco === undefined)
+        ? (rand() < (pr.smokeless_tobacco || 0)) : !!p.smokeless_tobacco;
+
+      var sbp;
+      if (p.sbp === null || p.sbp === undefined) {
+        var mean = treated ? pr.sbp_treated_mean : pr.sbp_untreated_mean;
+        sbp = Math.min(240, Math.max(80, mean + pr.sbp_sd * gauss(rand)));
+      } else sbp = p.sbp;
+
+      var lp = b.age * p.age + (ge65 ? b.age_ge65 : 0);
+      if (smk) lp += b.current_smoking;
+      if (cvd) lp += b.prevalent_cvd;
+      if (af) lp += b.atrial_fib;
+      if (dm) lp += ge65 ? b.dm_age_ge65 : b.dm_age_lt65;
+      if (treated) lp += b.htn_treatment + b.sbp_treated * sbp;
+      else lp += b.sbp_untreated * sbp;
+      if (slt && adjHR) lp += Math.log(adjHR);
+
+      out[i] = 1 - Math.pow(e.S0_5yr, Math.exp(lp - e.M));
+    }
+    return out;
+  }
+
+  function pct(sorted, q) {
+    var i = (sorted.length - 1) * q, lo = Math.floor(i), hi = Math.ceil(i);
+    return lo === hi ? sorted[lo] : sorted[lo] + (i - lo) * (sorted[hi] - sorted[lo]);
+  }
+  function variance(a) {
+    var m = 0, i;
+    for (i = 0; i < a.length; i++) m += a[i];
+    m /= a.length;
+    var v = 0;
+    for (i = 0; i < a.length; i++) v += (a[i] - m) * (a[i] - m);
+    return v / a.length;
+  }
+
+  var LABELS = {
+    sbp: "your systolic blood pressure",
+    on_htn_meds: "whether you take blood-pressure medication",
+    diabetes: "whether you have diabetes",
+    atrial_fib: "whether you have atrial fibrillation",
+    prevalent_cvd: "whether you have existing heart or vascular disease",
+    current_smoker: "whether you currently smoke",
+    smokeless_tobacco: "whether you chew or hold tobacco (gutkha, khaini, zarda, paan masala)"
+  };
+  var HOWTO = {
+    sbp: "A pharmacy BP machine, a clinic, or a home cuff. Take it twice, seated, and average.",
+    on_htn_meds: "Check your prescriptions for amlodipine, lisinopril, losartan, ramipril, "
+               + "telmisartan, a thiazide, or similar.",
+    diabetes: "A fasting glucose or HbA1c test.",
+    atrial_fib: "Requires an ECG. If you have had palpitations or an irregular pulse, ask a "
+              + "doctor — untreated AF is one of the most treatable stroke risks there is.",
+    prevalent_cvd: "A prior heart attack, angina, bypass, stent, heart failure or peripheral "
+                 + "artery disease all count.",
+    current_smoker: "Any smoking in the past year counts.",
+    smokeless_tobacco: "Gutkha, khaini, zarda, paan masala, mishri, or betel quid (paan) with "
+                     + "tobacco \u2014 chewed or held in the mouth rather than smoked."
+  };
+
+  /* First-order Sobol index: share of output variance each unknown explains. */
+  function valueOfInformation(p, n, seed, setName) {
+    var e = setFor(setName, p.sex), pr = e.priors;
+    var base = sampleRisks(p, n, seed, setName);
+    var baseVar = variance(base);
+    var sortedBase = Array.prototype.slice.call(base).sort(function (a, b) { return a - b; });
+    var baseW = pct(sortedBase, 0.9) - pct(sortedBase, 0.1);
+
+    return unknownsOf(p).map(function (field) {
+      var expVar, expW;
+      if (field === "sbp") {
+        var rand = mulberry32(seed + 17);
+        var centre = (p.on_htn_meds === null || p.on_htn_meds === undefined)
+          ? pr.on_htn_meds * pr.sbp_treated_mean + (1 - pr.on_htn_meds) * pr.sbp_untreated_mean
+          : (p.on_htn_meds ? pr.sbp_treated_mean : pr.sbp_untreated_mean);
+        var vs = 0, ws = 0, K = 16;
+        for (var k = 0; k < K; k++) {
+          var c = Math.min(240, Math.max(80, centre + pr.sbp_sd * gauss(rand)));
+          var q = Object.assign({}, p); q.sbp = c;
+          var r = sampleRisks(q, Math.max(2000, n / 8 | 0), seed + 23, setName);
+          vs += variance(r);
+          var sr = Array.prototype.slice.call(r).sort(function (a, b) { return a - b; });
+          ws += pct(sr, 0.9) - pct(sr, 0.1);
+        }
+        expVar = vs / K; expW = ws / K;
+      } else {
+        var pt = pr[field];
+        var qt = Object.assign({}, p); qt[field] = true;
+        var qf = Object.assign({}, p); qf[field] = false;
+        var rt = sampleRisks(qt, n, seed + 4, setName);
+        var rf = sampleRisks(qf, n, seed + 5, setName);
+        expVar = pt * variance(rt) + (1 - pt) * variance(rf);
+        var st = Array.prototype.slice.call(rt).sort(function (a, b) { return a - b; });
+        var sf = Array.prototype.slice.call(rf).sort(function (a, b) { return a - b; });
+        expW = pt * (pct(st, 0.9) - pct(st, 0.1)) + (1 - pt) * (pct(sf, 0.9) - pct(sf, 0.1));
+      }
+      return {
+        field: field,
+        label: LABELS[field],
+        how_to_find_out: HOWTO[field],
+        variance_share: baseVar > 0 ? Math.max(0, (baseVar - expVar) / baseVar) : 0,
+        current_width_pct: 100 * baseW,
+        expected_width_pct: 100 * expW
+      };
+    }).sort(function (a, b) { return b.variance_share - a.variance_share; });
+  }
+
+  function estimate(p, opts) {
+    opts = opts || {};
+    var n = opts.n || 20000, seed = opts.seed || 11, setName = opts.set;
+    var unk = unknownsOf(p);
+    var risks = sampleRisks(p, n, seed, setName);
+    var sorted = Array.prototype.slice.call(risks).sort(function (a, b) { return a - b; });
+    var out = {
+      point_pct: 100 * (unk.length ? pct(sorted, 0.5) : risks[0]),
+      low_pct: 100 * pct(sorted, 0.1),
+      high_pct: 100 * pct(sorted, 0.9),
+      is_certain: unk.length === 0,
+      unknown_fields: unk,
+      horizon_years: 5,
+      applicability: applicability(p)
+    };
+    out.interval_width_pct = out.high_pct - out.low_pct;
+    if (unk.length) out.value_of_information = valueOfInformation(p, Math.min(n, 12000), seed + 1, setName);
+    return out;
+  }
+
+  /* ---- counterfactuals ---------------------------------------------------
+   * "Start blood-pressure medication" is deliberately NOT offered. At a fixed measured
+   * SBP the fitted model gives treated people lower risk than untreated people — an
+   * artifact of the flatter SBP-risk slope observed in treated cohorts, not a causal
+   * treatment effect. Offering it would tell users a pill beats lowering their BP.
+   * The honest lever is the SBP value itself.
+   * -------------------------------------------------------------------- */
+  function counterfactuals(p, setName) {
+    var current = risk(p, setName), out = [];
+    function add(label, mod, caveat) {
+      var q = Object.assign({}, p, mod), r = risk(q, setName);
+      if (r < current - 1e-12) {
+        out.push({
+          change: label, new_risk_pct: 100 * r,
+          absolute_reduction_pct_points: 100 * (current - r),
+          relative_reduction: (current - r) / current, caveat: caveat || null
+        });
+      }
+    }
+    if (p.sbp > 120) {
+      [140, 130, 120].forEach(function (t) {
+        if (p.sbp > t) add("Lower systolic BP from " + Math.round(p.sbp) + " to " + t + " mmHg",
+          { sbp: t }, "Achieved with a doctor — through treatment, salt reduction, weight "
+                    + "loss and exercise. Not something this tool can prescribe.");
+      });
+    }
+    if (p.smokeless_tobacco) {
+      add("Stop chewing tobacco", { smokeless_tobacco: false },
+        "Modelled as the contrast with a non-user, using a pooled hazard ratio from a "
+      + "meta-analysis of chewing-tobacco users.");
+    }
+    if (p.current_smoker) {
+      add("Stop smoking", { current_smoker: false },
+        "The model treats smoking as current/not-current, so this is the contrast with a "
+      + "non-smoker rather than a predicted trajectory after quitting.");
+    }
+    if (p.atrial_fib) {
+      out.push({
+        change: "Atrial fibrillation — ask about anticoagulation",
+        new_risk_pct: null, absolute_reduction_pct_points: null, relative_reduction: null,
+        caveat: "AF is an input to this model, so it cannot be switched off here. But "
+              + "AF-related stroke is substantially preventable with appropriate "
+              + "anticoagulation. Worth raising with a doctor now."
+      });
+    }
+    out.sort(function (a, b) { return (b.relative_reduction || 0) - (a.relative_reduction || 0); });
+    return { current_risk_pct: 100 * current, options: out };
+  }
+
+  var API = {
+    linearPredictor: linearPredictor, risk: risk, applicability: applicability,
+    estimate: estimate, valueOfInformation: valueOfInformation,
+    counterfactuals: counterfactuals, unknownsOf: unknownsOf,
+    UNCERTAIN_FIELDS: UNCERTAIN_FIELDS
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  root.BrainShieldRisk = API;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+
+
+(function(){
+  "use strict";
+  var R = window.BrainShieldRisk;
+  var state = { sex:null, sbp_known:1, on_htn_meds:null, diabetes:null,
+                current_smoker:null, prevalent_cvd:null, atrial_fib:null,
+                smokeless_tobacco:null };
+
+  function parseVal(v){ return v === "null" ? null : (v === "1" ? true : (v === "0" ? false : v)); }
+
+  document.querySelectorAll(".toggle").forEach(function(group){
+    var field = group.getAttribute("data-field");
+    group.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        group.querySelectorAll("button").forEach(function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        state[field] = parseVal(btn.getAttribute("data-value"));
+        if (field === "sbp_known"){
+          var input = document.getElementById("sbp");
+          var known = btn.getAttribute("data-value") === "1";
+          input.disabled = !known;
+          if (!known) input.value = "";
+        }
+      });
+    });
+  });
+
+  function fmt(x){ return x.toFixed(x < 1 ? 2 : 1) + "%"; }
+
+  /* Bands compare against a same-age, same-sex person with no risk factors, NOT against
+     the cohort average. The cohort average is an all-ages-55+ figure, so calling it
+     "average for your age group" would be false for anyone far from the cohort mean age. */
+  function bandFor(pct, optimalPct){
+    var ratio = optimalPct > 0 ? pct / optimalPct : 1;
+    if (ratio < 1.25) return ["Close to the floor for your age", "greenbg", "green"];
+    if (ratio < 2.0)  return ["Moderately above the floor for your age", "amberbg", "amber"];
+    return ["Well above the floor for your age", "redbg", "red"];
+  }
+
+  document.getElementById("riskForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var age = parseFloat(document.getElementById("age").value);
+    if (!state.sex){ alert("Please select a sex — the model uses a different equation for each."); return; }
+    if (!age){ alert("Please enter your age."); return; }
+
+    var sbpRaw = document.getElementById("sbp").value;
+    var sbp = (state.sbp_known && sbpRaw !== "") ? parseFloat(sbpRaw) : null;
+
+    var profile = {
+      age: age, sex: state.sex, sbp: sbp,
+      on_htn_meds: state.on_htn_meds, diabetes: state.diabetes,
+      current_smoker: state.current_smoker, prevalent_cvd: state.prevalent_cvd,
+      atrial_fib: state.atrial_fib, smokeless_tobacco: state.smokeless_tobacco
+    };
+
+    var est = R.estimate(profile, { n: 20000 });
+    var cohort = 100 * RISK_MODEL.sets[RISK_MODEL.default_set].sexes[state.sex].cohort_avg_5yr_risk;
+    var optimal = { age: age, sex: state.sex, sbp: 110, on_htn_meds:false, diabetes:false,
+                    current_smoker:false, prevalent_cvd:false, atrial_fib:false,
+                    smokeless_tobacco:false };
+
+    // headline
+    var disp = document.getElementById("riskDisplay");
+    var label = document.getElementById("riskLabel");
+    if (est.is_certain){
+      disp.innerHTML = '<div class="risk-pct">' + fmt(est.point_pct) + '</div>';
+      label.textContent = "estimated probability of a first stroke in the next 5 years";
+    } else {
+      disp.innerHTML = '<div class="risk-range">' + fmt(est.low_pct) + " – " + fmt(est.high_pct) + '</div>';
+      label.textContent = "likely range for your 5-year stroke risk, given what you told us";
+    }
+
+    var optimalPct = 100 * R.risk(optimal);
+    var b = bandFor(est.point_pct, optimalPct);
+    var band = document.getElementById("riskBand");
+    band.textContent = b[0];
+    band.style.background = getComputedStyle(document.documentElement).getPropertyValue("--" + b[1]);
+    band.style.color = getComputedStyle(document.documentElement).getPropertyValue("--" + b[2]);
+
+    // plain-language reading
+    var per1000 = Math.round(est.point_pct * 10);
+    var plain = "Out of 1,000 people who answered exactly as you did, about <b>" + per1000 +
+      "</b> would be expected to have a stroke in the next five years, and about <b>" +
+      (1000 - per1000) + "</b> would not.";
+    if (!est.is_certain){
+      plain += " Because some answers were “not sure”, the honest answer is a range, not a single figure.";
+    }
+    document.getElementById("plainly").innerHTML = plain;
+
+    // comparisons
+    document.getElementById("optimalVal").textContent = fmt(optimalPct);
+    document.getElementById("cohortVal").textContent = fmt(cohort);
+
+    // value of information
+    var voiPanel = document.getElementById("voiPanel");
+    if (est.value_of_information && est.value_of_information.length){
+      var html = "";
+      est.value_of_information.forEach(function(r){
+        var sharePct = Math.round(100 * r.variance_share);
+        html += '<div class="voi-row">' +
+          '<div class="voi-bar"><i style="width:' + Math.max(2, sharePct) + '%"></i></div>' +
+          '<div class="voi-share">' + sharePct + '%</div>' +
+          '<div class="voi-text">Find out <b>' + r.label + '</b>' +
+          '<span class="how">' + r.how_to_find_out + '</span></div></div>';
+      });
+      document.getElementById("voiList").innerHTML = html;
+      voiPanel.style.display = "block";
+    } else voiPanel.style.display = "none";
+
+    // counterfactuals — only meaningful with a complete profile
+    var cfPanel = document.getElementById("cfPanel");
+    if (est.is_certain){
+      var cf = R.counterfactuals(profile);
+      if (cf.options.length){
+        var h = "";
+        cf.options.forEach(function(o){
+          h += '<div class="cf-row"><div class="cf-head"><b>' + o.change + '</b>';
+          if (o.absolute_reduction_pct_points !== null){
+            h += '<span class="cf-delta">' + fmt(o.new_risk_pct) + '</span>';
+          }
+          h += '</div>';
+          if (o.absolute_reduction_pct_points !== null){
+            h += '<div class="cf-caveat">Would lower the estimate by ' +
+              o.absolute_reduction_pct_points.toFixed(2) + ' percentage points (' +
+              Math.round(100 * o.relative_reduction) + '% lower). ' + (o.caveat || "") + '</div>';
+          } else if (o.caveat){
+            h += '<div class="cf-caveat">' + o.caveat + '</div>';
+          }
+          h += '</div>';
+        });
+        document.getElementById("cfList").innerHTML = h;
+        cfPanel.style.display = "block";
+      } else cfPanel.style.display = "none";
+    } else cfPanel.style.display = "none";
+
+    // warnings
+    var w = "";
+    est.applicability.notes.forEach(function(n){
+      w += '<div class="warnbox"><b>Worth knowing</b>' + n + '</div>';
+    });
+    if (est.applicability.status === "extrapolation"){
+      w += '<div class="warnbox"><b>Outside the model’s validated range</b>' +
+        'Every person used to build this model was 55 or older. Below that age, absolute ' +
+        '5-year stroke risk is genuinely very low, and the figure above is an extrapolation ' +
+        'rather than a calibrated probability. Treat it as a direction, not a number.</div>';
+    }
+    document.getElementById("warnings").innerHTML = w;
+
+    // provenance
+    var cs = RISK_MODEL.sets[RISK_MODEL.default_set];
+    document.getElementById("modelBadge").innerHTML =
+      "<b>How this number was produced.</b> Cox proportional-hazards survival model, " +
+      "risk = 1 − S₀(5)^exp(LP − M). Coefficients: " + cs.label + ". " +
+      "Source: " + RISK_MODEL.citation.paper + " " +
+      "(<a href='" + RISK_MODEL.citation.open_access_full_text + "' target='_blank' rel='noopener'>open access</a>). " +
+      "Published discrimination for this model family is a c-statistic of 0.62–0.78 depending " +
+      "on cohort and sex — useful for ranking, far from certainty for any individual. " +
+      "Calibration is meaningfully worse in Black participants than white participants in the " +
+      "source data, so the number shown will be less accurate for some people than others. " +
+      "Every coefficient is traceable to a published table in <code>src/risk/coefficients.json</code>.";
+
+    document.getElementById("results").style.display = "block";
+    document.getElementById("results").scrollIntoView({ behavior:"smooth" });
+  });
+})();
+</script>
+</body>
+</html>

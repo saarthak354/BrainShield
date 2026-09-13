@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BrainShield — 5-Year Stroke Risk</title>
+<style>
+  :root{
+    --navy:#21295C; --blue:#065A82; --teal:#1C7293; --mint:#6FD6C5;
+    --ink:#1B2430; --muted:#5B6472; --card:#F2F6F8; --white:#FFFFFF;
+    --danger:#B85042; --border:#E1E7EC; --amber:#8A5A00; --amberbg:#FDF2DC;
+    --greenbg:#E4F3EE; --green:#1E7B5C; --redbg:#FBE7E5; --red:#96271C;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:Calibri,"Segoe UI",Arial,sans-serif; background:var(--white); color:var(--ink); line-height:1.5;}
+  header{background:var(--navy); color:var(--white); padding:34px 8vw 30px;}
+  header .kicker{color:var(--mint); font-weight:700; letter-spacing:3px; font-size:13px; margin-bottom:8px;}
+  header h1{font-family:Cambria,Georgia,serif; font-size:34px; margin:0 0 8px;}
+  header p{color:#B9D6E8; font-size:15px; margin:0; max-width:780px;}
+  main{max-width:920px; margin:0 auto; padding:32px 6vw 80px;}
+  .emergency{background:#FBE7E5; border:1px solid #E8B4AE; color:#8A231A; padding:14px 18px;
+    border-radius:10px; font-size:13.5px; margin-bottom:20px;}
+  .emergency b{display:block; margin-bottom:4px; font-size:14px;}
+  .disclaimer{background:#FBF3E8; border:1px solid #E9D6B8; color:#7A5A24; padding:14px 18px;
+    border-radius:10px; font-size:13.5px; margin-bottom:30px;}
+  .section{margin-bottom:30px;}
+  .section h2{font-family:Cambria,Georgia,serif; font-size:20px; color:var(--navy); margin:0 0 4px;}
+  .section .sub{color:var(--muted); font-size:13px; margin:0 0 16px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:18px 24px;}
+  @media (max-width:640px){ .grid{grid-template-columns:1fr;} }
+  .field{display:flex; flex-direction:column; gap:6px;}
+  .field.full{grid-column:1 / -1;}
+  label{font-size:13.5px; font-weight:700;}
+  .hint{font-size:12px; color:var(--muted); margin-top:-2px;}
+  input[type="number"]{padding:10px 12px; border:1px solid var(--border); border-radius:8px;
+    font-size:14.5px; font-family:inherit; color:var(--ink); background:var(--white); width:100%;}
+  input[type="number"]:focus{outline:2px solid var(--teal); outline-offset:1px;}
+  input[type="number"]:disabled{background:#F4F6F8; color:#A8B0BA;}
+  .toggle{display:flex; gap:8px;}
+  .toggle button{flex:1; padding:10px 6px; border-radius:8px; border:1px solid var(--border);
+    background:var(--white); color:var(--muted); font-family:inherit; font-size:13.5px;
+    font-weight:700; cursor:pointer;}
+  .toggle button.active{background:var(--teal); border-color:var(--teal); color:var(--white);}
+  .toggle button.unsure.active{background:#8792A6; border-color:#8792A6;}
+  #submitBtn{width:100%; padding:16px; font-size:16px; font-weight:700; color:var(--white);
+    background:var(--navy); border:none; border-radius:10px; cursor:pointer; font-family:inherit;}
+  #submitBtn:hover{background:#161c47;}
+  #results{display:none; margin-top:36px;}
+  .result-card{background:var(--card); border-radius:14px; padding:30px; text-align:center;}
+  .risk-pct{font-family:Cambria,Georgia,serif; font-size:58px; font-weight:700; color:var(--navy); line-height:1.05;}
+  .risk-range{font-family:Cambria,Georgia,serif; font-size:40px; font-weight:700; color:var(--navy); line-height:1.1;}
+  .risk-label{font-size:14px; color:var(--muted); margin-top:6px;}
+  .risk-band{display:inline-block; margin-top:14px; padding:6px 16px; border-radius:20px;
+    font-size:13px; font-weight:700;}
+  .plainly{margin-top:18px; font-size:14.5px; color:var(--ink); max-width:560px;
+    margin-left:auto; margin-right:auto;}
+  .compare{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px;}
+  @media (max-width:560px){ .compare{grid-template-columns:1fr;} }
+  .compare .box{background:var(--white); border:1px solid var(--border); border-radius:10px;
+    padding:16px; text-align:center;}
+  .compare .box .val{font-family:Cambria,Georgia,serif; font-size:26px; font-weight:700; color:var(--teal);}
+  .compare .box .lbl{font-size:12.5px; color:var(--muted); margin-top:4px;}
+  .panel{margin-top:22px; background:var(--white); border:1px solid var(--border);
+    border-radius:12px; padding:20px;}
+  .panel h3{font-family:Cambria,Georgia,serif; font-size:17px; color:var(--navy); margin:0 0 4px;}
+  .panel .psub{font-size:12.5px; color:var(--muted); margin:0 0 14px;}
+  .voi-row{display:flex; align-items:flex-start; gap:12px; padding:11px 0; border-top:1px solid var(--border);}
+  .voi-row:first-of-type{border-top:none;}
+  .voi-bar{flex:0 0 92px; height:8px; background:#E8EDF1; border-radius:4px; margin-top:6px; overflow:hidden;}
+  .voi-bar i{display:block; height:100%; background:var(--teal);}
+  .voi-text{flex:1; font-size:13.5px;}
+  .voi-text b{color:var(--navy);}
+  .voi-text .how{display:block; font-size:12.5px; color:var(--muted); margin-top:2px;}
+  .voi-share{flex:0 0 52px; text-align:right; font-size:13px; font-weight:700; color:var(--teal); margin-top:2px;}
+  .cf-row{padding:12px 0; border-top:1px solid var(--border); font-size:13.5px;}
+  .cf-row:first-of-type{border-top:none;}
+  .cf-head{display:flex; justify-content:space-between; gap:12px; align-items:baseline;}
+  .cf-head b{color:var(--navy);}
+  .cf-delta{font-family:Cambria,Georgia,serif; font-size:17px; font-weight:700; color:var(--green); white-space:nowrap;}
+  .cf-caveat{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .warnbox{margin-top:18px; background:var(--amberbg); border:1px solid #E9D6B8; color:var(--amber);
+    border-radius:10px; padding:14px 16px; font-size:13px;}
+  .warnbox b{display:block; margin-bottom:3px;}
+  .model-badge{margin-top:28px; padding:16px 18px; border-radius:10px; background:var(--card);
+    border:1px solid var(--border); font-size:12.5px; color:var(--muted); line-height:1.65;}
+  .model-badge b{color:var(--navy);}
+  .model-badge a{color:var(--teal);}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">BRAINSHIELD</div>
+  <h1>5-Year Stroke Risk</h1>
+  <p>Your estimated probability of having a first stroke within the next five years,
+     from a published survival model built on 23,691 adults followed prospectively with
+     physician-adjudicated stroke events. Runs entirely in your browser — nothing is sent anywhere.</p>
+</header>
+
+<main>
+  <div class="emergency">
+    <b>If symptoms are happening right now, stop and call emergency services.</b>
+    Sudden face drooping, arm weakness, or speech difficulty — even if it passes — is a
+    medical emergency. This page estimates risk over years. It cannot tell you anything
+    about what is happening today.
+  </div>
+
+  <div class="disclaimer">
+    <b>This is not a diagnosis.</b> It is a statistical estimate for a group of people who
+    share your answers, not a prediction about you personally. It does not replace a
+    clinician, and no decision about medication should be made from this number.
+  </div>
+
+  <form id="riskForm">
+    <div class="section">
+      <h2>About you</h2>
+      <p class="sub">Both of these are required — the model is built separately for each sex,
+         and age carries the most weight of any input.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="age">Age (years)</label>
+          <input type="number" id="age" min="18" max="110" step="1" required />
+          <span class="hint">The model was built on adults aged 55–84.</span>
+        </div>
+        <div class="field">
+          <label>Sex</label>
+          <div class="toggle" data-field="sex">
+            <button type="button" data-value="women">Female</button>
+            <button type="button" data-value="men">Male</button>
+          </div>
+          <span class="hint">Used to pick the sex-specific equation.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Blood pressure</h2>
+      <p class="sub">If you don't know, say so. The estimate will be given as a range rather
+         than a made-up number, and we'll tell you how much measuring it would help.</p>
+      <div class="grid">
+        <div class="field">
+          <label for="sbp">Systolic blood pressure (the upper number, mmHg)</label>
+          <input type="number" id="sbp" min="70" max="260" step="1" />
+          <div class="toggle" data-field="sbp_known" style="margin-top:6px;">
+            <button type="button" data-value="1" class="active">I know it</button>
+            <button type="button" data-value="0" class="unsure">Not sure</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you take blood-pressure medication?</label>
+          <div class="toggle" data-field="on_htn_meds">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Medical history</h2>
+      <p class="sub">"Not sure" is a legitimate answer to every one of these.</p>
+      <div class="grid">
+        <div class="field">
+          <label>Diabetes</label>
+          <div class="toggle" data-field="diabetes">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Do you currently smoke?</label>
+          <div class="toggle" data-field="current_smoker">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Cigarettes, bidis or hookah. Any smoking in the past year counts.</span>
+        </div>
+        <div class="field">
+          <label>Do you chew or hold tobacco in your mouth?</label>
+          <div class="toggle" data-field="smokeless_tobacco">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Gutkha, khaini, zarda, paan masala, mishri, or paan with tobacco.</span>
+        </div>
+        <div class="field">
+          <label>Existing heart or vascular disease</label>
+          <div class="toggle" data-field="prevalent_cvd">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">Heart attack, angina, bypass, stent, heart failure, or poor circulation in the legs.</span>
+        </div>
+        <div class="field">
+          <label>Atrial fibrillation</label>
+          <div class="toggle" data-field="atrial_fib">
+            <button type="button" data-value="0">No</button>
+            <button type="button" data-value="1">Yes</button>
+            <button type="button" data-value="null" class="unsure active">Not sure</button>
+          </div>
+          <span class="hint">An irregular heart rhythm diagnosed on an ECG.</span>
+        </div>
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">Calculate my 5-year risk →</button>
+  </form>
+
+  <div id="results">
+    <div class="result-card">
+      <div id="riskDisplay"></div>
+      <div class="risk-label" id="riskLabel"></div>
+      <div class="risk-band" id="riskBand"></div>
+      <div class="plainly" id="plainly"></div>
+      <div class="compare">
+        <div class="box"><div class="val" id="optimalVal">—</div>
+          <div class="lbl">The floor for your age: someone your age and sex with none of these risk factors and healthy blood pressure</div></div>
+        <div class="box"><div class="val" id="cohortVal">—</div>
+          <div class="lbl">The average person of your sex in the study population (aged 55+)</div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="voiPanel" style="display:none;">
+      <h3>What would sharpen this estimate</h3>
+      <p class="psub">You left some answers as "not sure", so the result above is a range.
+         These are ranked by how much of that uncertainty each one accounts for.</p>
+      <div id="voiList"></div>
+    </div>
+
+    <div class="panel" id="cfPanel" style="display:none;">
+      <h3>What would change this number</h3>
+      <p class="psub">Modelled effects of changing each factor, holding everything else fixed.
+         These are associations measured in a cohort study, not guaranteed personal outcomes.</p>
+      <div id="cfList"></div>
+    </div>
+
+    <div id="warnings"></div>
+
+    <div class="model-badge" id="modelBadge"></div>
+  </div>
+</main>
+
+<script>
+/*__RISK_MODEL_DATA__*/
+/*__RISK_CORE__*/
+
+(function(){
+  "use strict";
+  var R = window.BrainShieldRisk;
+  var state = { sex:null, sbp_known:1, on_htn_meds:null, diabetes:null,
+                current_smoker:null, prevalent_cvd:null, atrial_fib:null,
+                smokeless_tobacco:null };
+
+  function parseVal(v){ return v === "null" ? null : (v === "1" ? true : (v === "0" ? false : v)); }
+
+  document.querySelectorAll(".toggle").forEach(function(group){
+    var field = group.getAttribute("data-field");
+    group.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        group.querySelectorAll("button").forEach(function(b){ b.classList.remove("active"); });
+        btn.classList.add("active");
+        state[field] = parseVal(btn.getAttribute("data-value"));
+        if (field === "sbp_known"){
+          var input = document.getElementById("sbp");
+          var known = btn.getAttribute("data-value") === "1";
+          input.disabled = !known;
+          if (!known) input.value = "";
+        }
+      });
+    });
+  });
+
+  function fmt(x){ return x.toFixed(x < 1 ? 2 : 1) + "%"; }
+
+  /* Bands compare against a same-age, same-sex person with no risk factors, NOT against
+     the cohort average. The cohort average is an all-ages-55+ figure, so calling it
+     "average for your age group" would be false for anyone far from the cohort mean age. */
+  function bandFor(pct, optimalPct){
+    var ratio = optimalPct > 0 ? pct / optimalPct : 1;
+    if (ratio < 1.25) return ["Close to the floor for your age", "greenbg", "green"];
+    if (ratio < 2.0)  return ["Moderately above the floor for your age", "amberbg", "amber"];
+    return ["Well above the floor for your age", "redbg", "red"];
+  }
+
+  document.getElementById("riskForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var age = parseFloat(document.getElementById("age").value);
+    if (!state.sex){ alert("Please select a sex — the model uses a different equation for each."); return; }
+    if (!age){ alert("Please enter your age."); return; }
+
+    var sbpRaw = document.getElementById("sbp").value;
+    var sbp = (state.sbp_known && sbpRaw !== "") ? parseFloat(sbpRaw) : null;
+
+    var profile = {
+      age: age, sex: state.sex, sbp: sbp,
+      on_htn_meds: state.on_htn_meds, diabetes: state.diabetes,
+      current_smoker: state.current_smoker, prevalent_cvd: state.prevalent_cvd,
+      atrial_fib: state.atrial_fib, smokeless_tobacco: state.smokeless_tobacco
+    };
+
+    var est = R.estimate(profile, { n: 20000 });
+    var cohort = 100 * RISK_MODEL.sets[RISK_MODEL.default_set].sexes[state.sex].cohort_avg_5yr_risk;
+    var optimal = { age: age, sex: state.sex, sbp: 110, on_htn_meds:false, diabetes:false,
+                    current_smoker:false, prevalent_cvd:false, atrial_fib:false,
+                    smokeless_tobacco:false };
+
+    // headline
+    var disp = document.getElementById("riskDisplay");
+    var label = document.getElementById("riskLabel");
+    if (est.is_certain){
+      disp.innerHTML = '<div class="risk-pct">' + fmt(est.point_pct) + '</div>';
+      label.textContent = "estimated probability of a first stroke in the next 5 years";
+    } else {
+      disp.innerHTML = '<div class="risk-range">' + fmt(est.low_pct) + " – " + fmt(est.high_pct) + '</div>';
+      label.textContent = "likely range for your 5-year stroke risk, given what you told us";
+    }
+
+    var optimalPct = 100 * R.risk(optimal);
+    var b = bandFor(est.point_pct, optimalPct);
+    var band = document.getElementById("riskBand");
+    band.textContent = b[0];
+    band.style.background = getComputedStyle(document.documentElement).getPropertyValue("--" + b[1]);
+    band.style.color = getComputedStyle(document.documentElement).getPropertyValue("--" + b[2]);
+
+    // plain-language reading
+    var per1000 = Math.round(est.point_pct * 10);
+    var plain = "Out of 1,000 people who answered exactly as you did, about <b>" + per1000 +
+      "</b> would be expected to have a stroke in the next five years, and about <b>" +
+      (1000 - per1000) + "</b> would not.";
+    if (!est.is_certain){
+      plain += " Because some answers were “not sure”, the honest answer is a range, not a single figure.";
+    }
+    document.getElementById("plainly").innerHTML = plain;
+
+    // comparisons
+    document.getElementById("optimalVal").textContent = fmt(optimalPct);
+    document.getElementById("cohortVal").textContent = fmt(cohort);
+
+    // value of information
+    var voiPanel = document.getElementById("voiPanel");
+    if (est.value_of_information && est.value_of_information.length){
+      var html = "";
+      est.value_of_information.forEach(function(r){
+        var sharePct = Math.round(100 * r.variance_share);
+        html += '<div class="voi-row">' +
+          '<div class="voi-bar"><i style="width:' + Math.max(2, sharePct) + '%"></i></div>' +
+          '<div class="voi-share">' + sharePct + '%</div>' +
+          '<div class="voi-text">Find out <b>' + r.label + '</b>' +
+          '<span class="how">' + r.how_to_find_out + '</span></div></div>';
+      });
+      document.getElementById("voiList").innerHTML = html;
+      voiPanel.style.display = "block";
+    } else voiPanel.style.display = "none";
+
+    // counterfactuals — only meaningful with a complete profile
+    var cfPanel = document.getElementById("cfPanel");
+    if (est.is_certain){
+      var cf = R.counterfactuals(profile);
+      if (cf.options.length){
+        var h = "";
+        cf.options.forEach(function(o){
+          h += '<div class="cf-row"><div class="cf-head"><b>' + o.change + '</b>';
+          if (o.absolute_reduction_pct_points !== null){
+            h += '<span class="cf-delta">' + fmt(o.new_risk_pct) + '</span>';
+          }
+          h += '</div>';
+          if (o.absolute_reduction_pct_points !== null){
+            h += '<div class="cf-caveat">Would lower the estimate by ' +
+              o.absolute_reduction_pct_points.toFixed(2) + ' percentage points (' +
+              Math.round(100 * o.relative_reduction) + '% lower). ' + (o.caveat || "") + '</div>';
+          } else if (o.caveat){
+            h += '<div class="cf-caveat">' + o.caveat + '</div>';
+          }
+          h += '</div>';
+        });
+        document.getElementById("cfList").innerHTML = h;
+        cfPanel.style.display = "block";
+      } else cfPanel.style.display = "none";
+    } else cfPanel.style.display = "none";
+
+    // warnings
+    var w = "";
+    est.applicability.notes.forEach(function(n){
+      w += '<div class="warnbox"><b>Worth knowing</b>' + n + '</div>';
+    });
+    if (est.applicability.status === "extrapolation"){
+      w += '<div class="warnbox"><b>Outside the model’s validated range</b>' +
+        'Every person used to build this model was 55 or older. Below that age, absolute ' +
+        '5-year stroke risk is genuinely very low, and the figure above is an extrapolation ' +
+        'rather than a calibrated probability. Treat it as a direction, not a number.</div>';
+    }
+    document.getElementById("warnings").innerHTML = w;
+
+    // provenance
+    var cs = RISK_MODEL.sets[RISK_MODEL.default_set];
+    document.getElementById("modelBadge").innerHTML =
+      "<b>How this number was produced.</b> Cox proportional-hazards survival model, " +
+      "risk = 1 − S₀(5)^exp(LP − M). Coefficients: " + cs.label + ". " +
+      "Source: " + RISK_MODEL.citation.paper + " " +
+      "(<a href='" + RISK_MODEL.citation.open_access_full_text + "' target='_blank' rel='noopener'>open access</a>). " +
+      "Published discrimination for this model family is a c-statistic of 0.62–0.78 depending " +
+      "on cohort and sex — useful for ranking, far from certainty for any individual. " +
+      "Calibration is meaningfully worse in Black participants than white participants in the " +
+      "source data, so the number shown will be less accurate for some people than others. " +
+      "Every coefficient is traceable to a published table in <code>src/risk/coefficients.json</code>.";
+
+    document.getElementById("results").style.display = "block";
+    document.getElementById("results").scrollIntoView({ behavior:"smooth" });
+  });
+})();
+</script>
+</body>
+</html>

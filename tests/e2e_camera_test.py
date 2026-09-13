@@ -71,16 +71,15 @@ INJECT = r"""
 """
 
 CASES = [
-    {"mode": "face",   "bpm": 72, "melanin": 0.0,  "motion": 0,   "motionFreq": 0,
-     "label": "face mode, lighter skin, still"},
+    # Face mode was removed - fingertip-with-flash is the only measurement offered.
+    # Contact PPG with active illumination is far less sensitive to motion and skin
+    # reflectance than ambient-light face rPPG, which is why it is the one that survived.
     {"mode": "finger", "bpm": 96, "melanin": 0.0,  "motion": 0,   "motionFreq": 0,
-     "label": "finger mode (flash-lit contact)"},
-    {"mode": "face",   "bpm": 64, "melanin": 0.85, "motion": 0,   "motionFreq": 0,
-     "label": "face mode, SIMULATED dark skin (melanin 0.85)"},
+     "label": "fingertip (flash-lit contact), lighter skin, still"},
     {"mode": "finger", "bpm": 78, "melanin": 0.85, "motion": 0,   "motionFreq": 0,
-     "label": "finger mode, SIMULATED dark skin (melanin 0.85)"},
-    {"mode": "face",   "bpm": 68, "melanin": 0.85, "motion": 2.2, "motionFreq": 1.6,
-     "label": "face, dark skin + MOTION (should warn, not lie)"},
+     "label": "fingertip, SIMULATED dark skin (melanin 0.85)"},
+    {"mode": "finger", "bpm": 64, "melanin": 0.85, "motion": 2.2, "motionFreq": 1.6,
+     "label": "fingertip, dark skin + MOTION (should warn, not lie)"},
 ]
 
 rows = []
@@ -95,7 +94,7 @@ with sync_playwright() as pw:
         pg.goto(URL)
         pg.wait_for_timeout(400)
         pg.evaluate(INJECT, c)
-        pg.click('.mode-btn[data-mode="%s"]' % c["mode"])
+        # no mode selector any more - fingertip is the only mode
         pg.click("#startPulse")
         pg.wait_for_selector("#pulseResults", state="visible", timeout=90000)
         pg.wait_for_timeout(1200)

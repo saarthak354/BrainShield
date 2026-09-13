@@ -73,7 +73,7 @@
 <header>
   <div class="kicker">BRAINSHIELD</div>
   <h1>Stroke Risk Self-Assessment</h1>
-  <p>A machine learning model trained on 253,680 real CDC survey respondents, benchmarked against classical clinical risk scores. Every question below is something you can answer about yourself — no clinic visit, lab test, or imaging required.</p>
+  <p><b>This page answers a different question from the <a href="risk5.html" style="color:#6FD6C5;">5-year risk calculator</a>.</b> It estimates how strongly a set of self-reported characteristics is associated with <i>having already had</i> a stroke, using a machine learning model trained on 253,680 real CDC survey respondents and benchmarked against classical clinical risk scores. Every question below is something you can answer about yourself — no clinic visit, lab test, or imaging required.</p>
 </header>
 <main>
   <div class="disclaimer"><b>This is a self-assessment research tool, not a diagnostic device.</b> It does not replace medical advice. If you are experiencing stroke symptoms (face drooping, arm weakness, speech difficulty), call emergency services immediately.</div>
@@ -192,7 +192,7 @@
       </div>
     </div>
 
-    <button type="submit" id="submitBtn">Calculate my stroke risk →</button>
+    <button type="submit" id="submitBtn">Calculate &rarr;</button>
   </form>
 
 <!--__RPPG_SECTION__-->
@@ -200,7 +200,8 @@
   <div id="results">
     <div class="result-card">
       <div class="risk-pct" id="riskPct">—</div>
-      <div class="risk-label">estimated 5-year self-reported stroke risk</div>
+      <div class="risk-label">estimated probability that a person answering this way<br>has <b>already had</b> a stroke at some point in their life</div>
+      <div style="margin-top:12px;font-size:13px;color:#5B6472;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.5;">This is <b>not</b> a forecast. The training data asks &ldquo;have you ever been told you had a stroke?&rdquo;, measured at a single point in time, so the model describes who has already had one &mdash; not who will. For a forward-looking 5-year estimate, see <a href="risk5.html" style="color:#1C7293;">the 5-year risk calculator</a>, which uses a survival model built on people followed prospectively over time.</div>
       <div class="risk-band" id="riskBand"></div>
 
       <div class="compare">

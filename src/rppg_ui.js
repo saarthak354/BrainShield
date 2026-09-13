@@ -12,8 +12,7 @@
 
   var video = document.getElementById("cam");
   var overlay = document.getElementById("camOverlay");
-  var faceGuide = document.getElementById("faceGuide");
-  var waveCv = document.getElementById("wave");
+    var waveCv = document.getElementById("wave");
   var waveCtx = waveCv.getContext("2d");
   var startBtn = document.getElementById("startPulse");
   var stopBtn = document.getElementById("stopPulse");
@@ -29,20 +28,10 @@
   var wctx = work.getContext("2d", { willReadFrequently: true });
 
   var HELP = {
-    finger: "Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for " + CAPTURE_SEC + " seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead.",
-    face: "Sit in <b>even, bright light</b> (facing a window works well) and line your face up inside the oval. Stay as still as you can for " + CAPTURE_SEC + " seconds — even small movements can overwhelm the pulse signal. Fingertip mode is more reliable if you have the option."
+    finger: "Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for " + CAPTURE_SEC + " seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead."
   };
 
-  document.querySelectorAll(".mode-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      if (running) return;
-      document.querySelectorAll(".mode-btn").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      mode = btn.getAttribute("data-mode");
-      modeHelp.innerHTML = HELP[mode];
-      faceGuide.style.display = (mode === "face" && stream) ? "block" : "none";
-    });
-  });
+  // Fingertip-with-flash is the only mode; the face-mode selector was removed.
 
   function clearWave() {
     waveCtx.fillStyle = "#0E1420";
@@ -89,13 +78,8 @@
   function sampleFrame(ts) {
     var vw = video.videoWidth, vh = video.videoHeight;
     if (!vw || !vh) return;
-    if (mode === "face") {
-      var cw = vw * 0.5, ch = vh * 0.6;
-      wctx.drawImage(video, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, work.width, work.height);
-    } else {
-      var s = Math.min(vw, vh) * 0.7;
-      wctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, work.width, work.height);
-    }
+    var s = Math.min(vw, vh) * 0.7;
+    wctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, work.width, work.height);
     var d = wctx.getImageData(0, 0, work.width, work.height).data;
     var r = 0, g = 0, b = 0, n = work.width * work.height, i;
     for (i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
@@ -179,7 +163,6 @@
     video.srcObject = stream;
     await video.play().catch(function () {});
     overlay.style.display = "none";
-    if (mode === "face") faceGuide.style.display = "block";
 
     track = stream.getVideoTracks()[0];
     if (mode === "finger" && track && track.getCapabilities) {
@@ -210,7 +193,6 @@
     video.srcObject = null;
     overlay.style.display = "flex";
     overlay.textContent = "Camera is off";
-    faceGuide.style.display = "none";
     startBtn.style.display = "inline-block";
     stopBtn.style.display = "none";
   }
@@ -287,7 +269,7 @@
   selfBtn.addEventListener("click", function () {
     var bpm = 60 + Math.floor(Math.random() * 45);
     var syn = window.RPPG.synth({ bpm: bpm, dur: 20, fs: 30, melanin: 0.6, noise: 0.4, motion: 0.5, interf: 0.6, interfWander: 0.2 });
-    var res = window.RPPG.analyse(syn, { mode: "face", fs: 30 });
+    var res = window.RPPG.analyse(syn, { mode: "finger", fs: 30 });
     render(res, true);
     document.getElementById("qualNote").textContent =
       "Synthetic signal generated at " + bpm + " bpm; the pipeline recovered " +

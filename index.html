@@ -120,7 +120,7 @@
 <header>
   <div class="kicker">BRAINSHIELD</div>
   <h1>Stroke Risk Self-Assessment</h1>
-  <p>A machine learning model trained on 253,680 real CDC survey respondents, benchmarked against classical clinical risk scores. Every question below is something you can answer about yourself — no clinic visit, lab test, or imaging required.</p>
+  <p><b>This page answers a different question from the <a href="risk5.html" style="color:#6FD6C5;">5-year risk calculator</a>.</b> It estimates how strongly a set of self-reported characteristics is associated with <i>having already had</i> a stroke, using a machine learning model trained on 253,680 real CDC survey respondents and benchmarked against classical clinical risk scores. Every question below is something you can answer about yourself — no clinic visit, lab test, or imaging required.</p>
 </header>
 <main>
   <div class="disclaimer"><b>This is a self-assessment research tool, not a diagnostic device.</b> It does not replace medical advice. If you are experiencing stroke symptoms (face drooping, arm weakness, speech difficulty), call emergency services immediately.</div>
@@ -239,7 +239,7 @@
       </div>
     </div>
 
-    <button type="submit" id="submitBtn">Calculate my stroke risk →</button>
+    <button type="submit" id="submitBtn">Calculate &rarr;</button>
   </form>
 
   <div class="section" id="pulseSection" style="border-top:1px solid var(--border); padding-top:34px;">
@@ -251,16 +251,6 @@
       <p class="pulse-sep"><b>This is measured separately and is not fed into the stroke risk score above.</b> The risk model was trained only on questionnaire data, so quietly mixing a heart-rate reading into its output would misrepresent what that model actually validated.</p>
     </div>
 
-    <div class="mode-row">
-      <button type="button" class="mode-btn active" data-mode="finger">
-        <span class="mode-title">Fingertip + flash</span>
-        <span class="mode-desc">Recommended — strongest signal</span>
-      </button>
-      <button type="button" class="mode-btn" data-mode="face">
-        <span class="mode-title">Face (contactless)</span>
-        <span class="mode-desc">No contact, but far more sensitive to motion &amp; lighting</span>
-      </button>
-    </div>
 
     <div class="mode-help" id="modeHelp">
       Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for 25 seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead.
@@ -269,7 +259,6 @@
     <div class="capture-area" id="captureArea">
       <div class="cam-wrap">
         <video id="cam" playsinline muted></video>
-        <div class="face-guide" id="faceGuide"></div>
         <div class="cam-overlay" id="camOverlay">Camera is off</div>
       </div>
       <div class="capture-side">
@@ -321,7 +310,7 @@
       <p><b>This feature has not been validated against a medical-grade reference on real people.</b> Everything below comes from published literature and from our own synthetic-signal testing, not from human trials we conducted.</p>
       <p><b>Skin tone affects accuracy, and this matters here.</b> Melanin absorbs light, which weakens the very signal this technique depends on. A 2025 review of 100 rPPG studies found mean error rising from about <b>5.2 bpm on lighter skin (Fitzpatrick I–III) to 14.1 bpm on darker skin (Fitzpatrick V–VI)</b>, with a cited meta-analysis reporting a more-than-twofold degradation. Those same datasets under-represent darker skin tones — under 25% of participants. A UCLA group concluded that properly fixing this needs additional hardware (radar fused with camera), not just better software.</p>
       <p><b>What we did about it.</b> Fingertip-with-flash is the default mode precisely because it floods the tissue with light instead of relying on ambient reflection, which raises signal strength for everyone and disproportionately helps where reflectance is lower. The processing uses POS and CHROM rather than the naive green-channel method. Most importantly, a reading is only reported as reliable if it is <b>stable across independent time windows and agrees between two different algorithms</b> — in our synthetic testing this reduced confidently-wrong readings from 13 in 60 to 0 in 60 under simulated darker-skin, in-motion conditions. When it cannot get a trustworthy reading it says so instead of showing a number.</p>
-      <p><b>Known irreducible limit.</b> A rhythmic disturbance at a steady, heart-rate-plausible frequency (a moving vehicle, rocking, a flickering light) can be mistaken for a pulse in face mode. This is physically ambiguous for a single camera and we have not solved it — it is another reason fingertip mode is the default.</p>
+      <p><b>Why face mode was removed.</b> Contactless face measurement relies on ambient light reflecting off skin, which makes it far more sensitive to motion and lighting, and substantially weaker where skin reflectance is lower — published rPPG error rises from about 5.2&nbsp;bpm on Fitzpatrick I–III to 14.1&nbsp;bpm on V–VI. It also had an irreducible failure mode: a rhythmic disturbance at a heart-rate-plausible frequency (a moving vehicle, rocking, a flickering light) is physically ambiguous to a single camera. Fingertip-with-flash is <i>contact</i> photoplethysmography with active illumination — a different and far more robust measurement — so it is now the only mode offered.</p>
     </div>
   </div>
 
@@ -329,7 +318,8 @@
   <div id="results">
     <div class="result-card">
       <div class="risk-pct" id="riskPct">—</div>
-      <div class="risk-label">estimated 5-year self-reported stroke risk</div>
+      <div class="risk-label">estimated probability that a person answering this way<br>has <b>already had</b> a stroke at some point in their life</div>
+      <div style="margin-top:12px;font-size:13px;color:#5B6472;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.5;">This is <b>not</b> a forecast. The training data asks &ldquo;have you ever been told you had a stroke?&rdquo;, measured at a single point in time, so the model describes who has already had one &mdash; not who will. For a forward-looking 5-year estimate, see <a href="risk5.html" style="color:#1C7293;">the 5-year risk calculator</a>, which uses a survival model built on people followed prospectively over time.</div>
       <div class="risk-band" id="riskBand"></div>
 
       <div class="compare">
@@ -995,8 +985,7 @@ document.getElementById("riskForm").addEventListener("submit", function(e){
 
   var video = document.getElementById("cam");
   var overlay = document.getElementById("camOverlay");
-  var faceGuide = document.getElementById("faceGuide");
-  var waveCv = document.getElementById("wave");
+    var waveCv = document.getElementById("wave");
   var waveCtx = waveCv.getContext("2d");
   var startBtn = document.getElementById("startPulse");
   var stopBtn = document.getElementById("stopPulse");
@@ -1012,20 +1001,10 @@ document.getElementById("riskForm").addEventListener("submit", function(e){
   var wctx = work.getContext("2d", { willReadFrequently: true });
 
   var HELP = {
-    finger: "Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for " + CAPTURE_SEC + " seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead.",
-    face: "Sit in <b>even, bright light</b> (facing a window works well) and line your face up inside the oval. Stay as still as you can for " + CAPTURE_SEC + " seconds — even small movements can overwhelm the pulse signal. Fingertip mode is more reliable if you have the option."
+    finger: "Cover the <b>rear camera lens and flash</b> completely with your fingertip — light pressure, don't press hard. Keep your hand still for " + CAPTURE_SEC + " seconds. On phones the flash turns on automatically; on a laptop, use a bright lamp instead."
   };
 
-  document.querySelectorAll(".mode-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      if (running) return;
-      document.querySelectorAll(".mode-btn").forEach(function (b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      mode = btn.getAttribute("data-mode");
-      modeHelp.innerHTML = HELP[mode];
-      faceGuide.style.display = (mode === "face" && stream) ? "block" : "none";
-    });
-  });
+  // Fingertip-with-flash is the only mode; the face-mode selector was removed.
 
   function clearWave() {
     waveCtx.fillStyle = "#0E1420";
@@ -1072,13 +1051,8 @@ document.getElementById("riskForm").addEventListener("submit", function(e){
   function sampleFrame(ts) {
     var vw = video.videoWidth, vh = video.videoHeight;
     if (!vw || !vh) return;
-    if (mode === "face") {
-      var cw = vw * 0.5, ch = vh * 0.6;
-      wctx.drawImage(video, (vw - cw) / 2, (vh - ch) / 2, cw, ch, 0, 0, work.width, work.height);
-    } else {
-      var s = Math.min(vw, vh) * 0.7;
-      wctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, work.width, work.height);
-    }
+    var s = Math.min(vw, vh) * 0.7;
+    wctx.drawImage(video, (vw - s) / 2, (vh - s) / 2, s, s, 0, 0, work.width, work.height);
     var d = wctx.getImageData(0, 0, work.width, work.height).data;
     var r = 0, g = 0, b = 0, n = work.width * work.height, i;
     for (i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
@@ -1162,7 +1136,6 @@ document.getElementById("riskForm").addEventListener("submit", function(e){
     video.srcObject = stream;
     await video.play().catch(function () {});
     overlay.style.display = "none";
-    if (mode === "face") faceGuide.style.display = "block";
 
     track = stream.getVideoTracks()[0];
     if (mode === "finger" && track && track.getCapabilities) {
@@ -1193,7 +1166,6 @@ document.getElementById("riskForm").addEventListener("submit", function(e){
     video.srcObject = null;
     overlay.style.display = "flex";
     overlay.textContent = "Camera is off";
-    faceGuide.style.display = "none";
     startBtn.style.display = "inline-block";
     stopBtn.style.display = "none";
   }
@@ -1270,7 +1242,7 @@ document.getElementById("riskForm").addEventListener("submit", function(e){
   selfBtn.addEventListener("click", function () {
     var bpm = 60 + Math.floor(Math.random() * 45);
     var syn = window.RPPG.synth({ bpm: bpm, dur: 20, fs: 30, melanin: 0.6, noise: 0.4, motion: 0.5, interf: 0.6, interfWander: 0.2 });
-    var res = window.RPPG.analyse(syn, { mode: "face", fs: 30 });
+    var res = window.RPPG.analyse(syn, { mode: "finger", fs: 30 });
     render(res, true);
     document.getElementById("qualNote").textContent =
       "Synthetic signal generated at " + bpm + " bpm; the pipeline recovered " +

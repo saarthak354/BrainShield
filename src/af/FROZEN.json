@@ -1,0 +1,18 @@
+{
+  "frozen_at": "2026-09-11T22:27:03",
+  "label": "pre-BUTPPG-validation",
+  "why": "Algorithm frozen before independent validation. Changing any listed file after this point invalidates results computed against it.",
+  "development_results": {
+    "dataset": "MIT-BIH AFDB, 29,018 windows, 25 records",
+    "validation": "leave-one-record-out",
+    "note": "This is DEVELOPMENT performance. The algorithm was iterated against this data, so it is not an independent estimate."
+  },
+  "files": {
+    "src/af/build_afdb.py": "331993f1417a36404059294fd6c0855a04798fe86766a4764a4958e3405e70f6",
+    "src/af/train_af.py": "2b791399034cff773028d7d0039f7899079d566edc1272a34b8c667b8d9455b9",
+    "src/af/af_model_export.json": "aca1f08861ad6c6dd7791f1fc62479759a3dd39f0505374ea4d039e1399c5536",
+    "src/af/af_core.js": "c3fefe7149e53ee1784862d0401bae39c6b911643f03d9d00435ea71251518b2",
+    "src/af/af_capture.js": "fc8a467b6eaa8827c5be4b531614bb309d9cdec6509cc2c7a337af7cc72d714d",
+    "src/rppg_core.js": "2e880c52593c8a09379ac3ef5cddc33bb9988af1ea77a994d1e6f63d432458e3"
+  }
+}

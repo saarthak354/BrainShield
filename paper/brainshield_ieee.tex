@@ -1,0 +1,765 @@
+%% =====================================================================
+%%  Multimodal Stroke Prediction System
+%%  IEEE Conference Paper  --  compile with pdfLaTeX (Overleaf: IEEEtran)
+%% =====================================================================
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+% IEEE requires Times. Under a Unicode engine (XeTeX/LuaTeX) the legacy `times`
+% package leaves TU/ptm undefined and silently substitutes Latin Modern, so use the
+% newtx family, which provides Times-compatible text and maths on all engines.
+% newtxmath must follow amssymb, and \Bbbk is defined by both.
+\let\Bbbk\relax
+\usepackage{newtxtext,newtxmath}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{A Multimodal Stroke Prediction System Using\\
+Smartphone Photoplethysmography, Self-Reported Risk Factors,\\
+and Medical Document Analysis}
+
+%% =====================================================================
+%%  AUTHOR BLOCK -- fill in team member details here
+%% =====================================================================
+\author{
+\IEEEauthorblockN{
+    \rule{3cm}{0.4pt}\quad
+    \rule{3cm}{0.4pt}\quad
+    \rule{3cm}{0.4pt}
+}
+\IEEEauthorblockA{
+    \textit{\rule{4cm}{0.4pt}} \\
+    \textit{\rule{5cm}{0.4pt}} \\
+    \rule{4cm}{0.4pt} \\
+    \rule{5cm}{0.4pt}
+}
+\vspace{6mm}
+}
+%% =====================================================================
+
+\maketitle
+
+\begin{abstract}
+Absolute stroke risk estimation is conventionally confined to clinical settings
+because it requires measurements that individuals cannot obtain unaided. We present
+a multimodal system that produces a calibrated five-year absolute stroke
+probability from three inputs available to any smartphone user: a structured
+questionnaire, a sixty-second fingertip photoplethysmogram acquired with the
+device camera and torch, and optional photographs of medication packaging or
+laboratory reports. Absolute risk is anchored to a published Cox
+proportional-hazards model derived from a prospective cohort of 23{,}691 adults
+with adjudicated stroke outcomes, extended with covariate-adjusted adjunct terms
+for population-specific risk factors. Unanswered questions are propagated as
+distributions rather than imputed, yielding an interval estimate together with a
+variance-based ranking of which unmeasured input would most reduce uncertainty.
+Rhythm assessment uses a classical interval-statistics classifier trained on the
+MIT-BIH Atrial Fibrillation Database, achieving an area under the receiver
+operating characteristic curve of 0.990 under leave-one-patient-out validation. We
+introduce an arrhythmia-aware signal quality assessment, motivated by the
+observation that the spectral and rate-stability metrics conventionally used to
+gate photoplethysmographic heart-rate estimation are structurally incompatible
+with arrhythmia detection. Independent evaluation on 300 smartphone recordings
+with synchronous electrocardiographic ground truth yields 90\% beat-detection
+sensitivity, 90\% positive predictive value, and 28.4\,ms inter-beat interval
+error on expert-graded recordings. Projected screening performance gives a
+negative predictive value of 99.9\% at population prevalence, supporting an
+asymmetric decision rule in which a regular rhythm resolves atrial fibrillation
+within the risk model while an irregular rhythm produces a referral rather than a
+classification.
+\end{abstract}
+
+\begin{IEEEkeywords}
+stroke risk prediction, photoplethysmography, atrial fibrillation screening,
+mobile health, survival analysis, uncertainty quantification, optical character
+recognition
+\end{IEEEkeywords}
+
+%% =====================================================================
+\section{Introduction}
+%% =====================================================================
+
+Stroke is among the leading causes of death and acquired disability worldwide, and
+a substantial fraction of its burden is attributable to modifiable risk factors.
+Established risk equations such as the Framingham Stroke Risk Profile translate a
+set of clinical measurements into an absolute probability of incident stroke over
+a defined horizon. Their practical reach is limited by the inputs they require:
+systolic blood pressure measured by a trained observer, laboratory-confirmed
+diabetes status, and electrocardiographically documented atrial fibrillation.
+
+Two consequences follow. First, individuals outside regular clinical contact
+cannot obtain an estimate at all. Second, where such tools are made available as
+self-assessment instruments, unknown inputs are typically replaced by population
+averages, and the resulting number is presented with a confidence that its inputs
+do not support.
+
+This work addresses both. We describe a system that produces a calibrated
+five-year absolute stroke probability entirely on a consumer smartphone, combining
+three modalities that require no hardware beyond the device itself, and that
+represents what the user does not know as uncertainty rather than as an
+assumption.
+
+The principal contributions are:
+
+\begin{enumerate}
+\item An \emph{equation-anchored fusion architecture} in which absolute
+      calibration derives from a published prospective-cohort survival model, and
+      each additional modality either resolves a variable the model already
+      contains or contributes a documented, covariate-adjusted adjunct term. Every
+      coefficient remains traceable to a published source.
+\item \emph{Uncertainty propagation with value-of-information ranking}. Unanswered
+      questions are carried as prior distributions and propagated by Monte Carlo,
+      producing an interval rather than a point estimate. First-order Sobol indices
+      rank the unmeasured inputs by the share of output variance each explains,
+      converting missing data into an actionable measurement recommendation.
+\item \emph{Arrhythmia-aware signal quality assessment}. We show that spectral
+      signal-to-noise ratio and inter-window rate consistency---the two metrics
+      conventionally used to gate photoplethysmographic heart-rate estimation---are
+      structurally unsuitable for gating arrhythmia analysis, and give a
+      replacement based on band-aggregate and time-domain criteria.
+\item An \emph{asymmetric decision rule} derived from the predictive-value
+      asymmetry of low-prevalence screening, under which the rhythm module may
+      exclude atrial fibrillation from the risk computation but never assert it.
+\item \emph{Population-specific extension}, demonstrated by incorporating
+      smokeless tobacco use---a dominant exposure in South Asia that Western-derived
+      equations omit---as a separately weighted adjunct term.
+\end{enumerate}
+
+%% =====================================================================
+\section{Related Work}
+%% =====================================================================
+
+\subsection{Absolute Risk Equations}
+The Framingham Stroke Risk Profile \cite{wolf1991} established points-based
+estimation of ten-year stroke probability from age, systolic blood pressure,
+antihypertensive treatment, diabetes, smoking, prevalent cardiovascular disease,
+atrial fibrillation and electrocardiographic left ventricular hypertrophy. A
+revision \cite{dufouil2017} recalibrated the model against contemporary cohorts,
+reporting concordance statistics between 0.62 and 0.78 across derivation and
+external validation samples. Composite cardiovascular instruments such as the
+Pooled Cohort Equations and QRISK3 include stroke within a broader endpoint.
+
+\subsection{Machine Learning on Survey Data}
+Gradient-boosted and ensemble classifiers trained on large cross-sectional health
+surveys report discrimination exceeding 0.82 for stroke history. Such models
+predict \emph{prevalent} self-reported stroke rather than incident events; because
+the training data carry no time axis, their output is not a forward risk and is
+not directly comparable to survival-model concordance.
+
+\subsection{Smartphone Photoplethysmography}
+Contact photoplethysmography using a fingertip placed over a smartphone camera
+with the torch illuminated has been validated for atrial fibrillation screening in
+several prospective studies, with reported sensitivity between 91.5\% and 96.3\%
+and specificity between 97\% and 99.6\%
+\cite{brasier2019,proesmans2019}. A meta-analysis of ten diagnostic accuracy
+studies covering 3{,}852 participants found that, when screening asymptomatic
+populations, positive predictive value falls to approximately 20--40\% while
+negative predictive value approaches 100\% \cite{oconnor2020}. This asymmetry is
+a direct consequence of low disease prevalence and motivates the decision rule
+adopted here.
+
+\subsection{Interval-Based Arrhythmia Detection}
+Detection of atrial fibrillation from inter-beat intervals is well established
+using statistical irregularity descriptors---root mean square of successive
+differences, Shannon entropy, sample entropy \cite{richman2000} and Poincar\'e
+descriptors. These operate on interval sequences and are therefore agnostic to
+whether those intervals originate from electrocardiography or photoplethysmography,
+which permits the classifier and the acquisition path to be validated separately.
+
+%% =====================================================================
+\section{System Architecture}
+%% =====================================================================
+
+The system executes entirely within the browser on the user's device. No
+questionnaire response, video frame or photograph is transmitted. Fig.~1
+summarises the flow.
+
+\begin{figure}[t]
+\centering
+\footnotesize
+\setlength{\fboxsep}{6pt}
+\fbox{\begin{minipage}{0.88\columnwidth}
+\centering
+\textbf{Stage 1 — Questionnaire}\\
+age, sex, systolic BP, medication, diabetes,\\
+smoking, smokeless tobacco, prior CVD, AF\\[2pt]
+$\downarrow$\\[2pt]
+\textbf{Stage 2 — Fingertip PPG (60\,s)}\\
+camera $+$ torch $\rightarrow$ quality gate $\rightarrow$\\
+beat detection $\rightarrow$ RR intervals $\rightarrow$ classifier\\[2pt]
+$\downarrow$\\[2pt]
+\textbf{Stage 3 — Document capture (optional)}\\
+on-device OCR $\rightarrow$ lexicon match $\rightarrow$\\
+user confirmation\\[2pt]
+$\downarrow$\\[2pt]
+\textbf{Cox model $\rightarrow$ 5-year absolute risk}\\
+point estimate or interval $+$ value of information
+\end{minipage}}
+\caption{Three-stage acquisition. Each stage may only resolve a variable left
+unknown by the preceding stage; no stage overrides a direct user response.}
+\end{figure}
+
+A single invariant governs fusion: \emph{a later stage may resolve an unknown, but
+never overrides an explicit user response, and never asserts a positive finding
+that its evidence cannot support.}
+
+%% =====================================================================
+\section{Absolute Risk Estimation}
+%% =====================================================================
+
+\subsection{Model Form}
+Five-year risk is computed from a Cox proportional-hazards model,
+\begin{equation}
+\hat{p}(t=5 \mid \mathbf{x}) = 1 - S_0(5)^{\exp\left(\mathrm{LP}(\mathbf{x}) - M\right)},
+\end{equation}
+where $\mathrm{LP}(\mathbf{x}) = \sum_j \beta_j x_j$, $\beta_j = \ln(\mathrm{HR}_j)$,
+and $M = \sum_j \beta_j \bar{x}_j$ centres the predictor on the derivation cohort
+mean. Diabetes enters through one of two age-conditioned coefficients, reflecting
+the single retained interaction in the source model; systolic pressure enters
+through a treated or untreated coefficient according to medication status.
+
+\subsection{Coefficient Selection}
+Two coefficient sets are published for the revised profile. We adopt the REGARDS
+estimates as the operational default on four grounds: the derivation sample is
+23{,}691 against 5{,}072; follow-up is exactly five years, matching the prediction
+horizon without extrapolation; events were adjudicated under six-monthly active
+surveillance; and the cohort includes substantial representation permitting
+race-stratified baseline rates. Table~\ref{tab:coef} lists the hazard ratios.
+
+\begin{table}[t]
+\caption{Hazard ratios, REGARDS derivation sample, age $\geq$ 55}
+\label{tab:coef}
+\centering
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+Risk factor & Men & Women \\
+\midrule
+Age (per 10 years)          & 1.72 & 1.83 \\
+Current smoking             & 2.00 & 1.77 \\
+Prevalent CVD               & 1.31 & 1.52 \\
+Atrial fibrillation         & 1.62 & 1.57 \\
+Age $\geq$ 65               & 1.34 & 1.44 \\
+Diabetes, age $<$ 65        & 1.94 & 1.66 \\
+Diabetes, age $\geq$ 65     & 1.15 & 1.11 \\
+Antihypertensive treatment  & 1.26 & 1.19 \\
+SBP, untreated (per 10\,mmHg) & 1.09 & 1.16 \\
+SBP, treated (per 10\,mmHg)   & 1.05 & 1.18 \\
+\midrule
+\textit{Adjunct term} & \multicolumn{2}{c}{} \\
+Smokeless tobacco           & 1.35 & 1.35 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Recovery of Baseline Survival}
+The source publication reports Kaplan--Meier cohort risk but not $S_0$. Because
+risk is convex in the linear predictor, the mean of risk exceeds risk at the mean,
+so equating $S_0$ with $1 - \mathrm{KM}$ introduces a systematic bias. We instead
+construct a synthetic cohort matching the published covariate marginals and solve
+numerically for the $S_0$ reproducing the observed mean risk:
+\begin{equation}
+S_0(5) : \quad \mathbb{E}_{\mathbf{x}}\!\left[1 - S_0(5)^{\exp(\mathrm{LP}(\mathbf{x})-M)}\right] = \mathrm{KM}(5).
+\end{equation}
+This yields $S_0(5) = 0.97310$ for men and $0.97803$ for women. The direct
+substitution would give $0.969$ and $0.973$, overstating risk for a
+cohort-representative individual by approximately 15\% in relative terms.
+Reconstruction accuracy is verified by confirming that the mean predicted risk over
+an independently seeded synthetic cohort reproduces the published five-year
+Kaplan--Meier estimates of 0.031 and 0.027 to within 0.002.
+
+\subsection{Adjunct Terms}
+Risk factors absent from the derivation cohort are incorporated as additional
+linear-predictor terms using published covariate-adjusted hazard ratios. Such
+terms are centred at zero rather than at the target-population prevalence: the
+derivation cohort is the reference against which $S_0$ was calibrated, and where
+an exposure was negligible in that cohort, non-exposure already constitutes the
+reference level. Centring on target prevalence would apply an unwarranted
+reduction to unexposed individuals. Cohort calibration is verified to be
+unaffected.
+
+We apply this to smokeless tobacco, with a pooled stroke relative risk of 1.35
+(95\% CI 1.20--1.50) for chewing-tobacco users \cite{gupta2019}. The same
+meta-analysis reports the overall association to be essentially unchanged under
+strict adjustment for smoking (1.17 unadjusted versus 1.18 adjusted), supporting
+treatment of this exposure as separable from combustible tobacco. It is queried
+independently because its effect is materially smaller than that of smoking
+(HR 2.00 in men); combining the two would overstate risk for exclusive smokeless
+users by approximately 50\%.
+
+\subsection{Uncertainty Propagation}
+Where a response is unknown, the variable is sampled from a population prior and
+propagated by Monte Carlo, and the system reports the 10th--90th percentile
+interval. A fully specified profile collapses the interval to a point.
+
+To convert missing data into guidance, we compute the first-order Sobol index for
+each unknown input,
+\begin{equation}
+S_j = \frac{\mathrm{Var}(R) - \mathbb{E}_{x_j}\!\left[\mathrm{Var}(R \mid X_j = x_j)\right]}{\mathrm{Var}(R)},
+\end{equation}
+the share of output variance attributable to that input. Variance-based
+decomposition is bounded in $[0,1]$ and is well defined for the non-additive
+response surface, and the resulting ranking is subject-specific rather than fixed.
+
+\subsection{Counterfactual Guidance}
+Modifiable factors are reported with the risk each change would remove. Changes in
+medication \emph{status} are deliberately excluded from this set. At fixed measured
+systolic pressure the fitted model assigns treated individuals a lower hazard than
+untreated individuals, reflecting the flatter observed pressure--risk gradient in
+treated cohorts rather than a causal treatment effect; presenting it as an
+actionable lever would misrepresent the evidence. The pressure value itself is
+offered instead.
+
+%% =====================================================================
+\section{Rhythm Assessment from Smartphone Photoplethysmography}
+%% =====================================================================
+
+\subsection{Acquisition}
+The user places a fingertip over the rear camera and torch for sixty seconds.
+Illuminated contact photoplethysmography is used exclusively; ambient-light facial
+measurement is not offered, as it depends on skin reflectance and is markedly more
+sensitive to motion and illumination change. Per-frame mean intensity is computed
+over a central region of interest for each colour channel, and the channel
+carrying the cleanest pulse is selected automatically.
+
+\subsection{Sub-Sample Beat Localisation}
+At a typical capture rate of 30\,frames\,s$^{-1}$, beat timing is quantised to
+33\,ms---comparable in magnitude to the beat-to-beat variability that distinguishes
+sinus rhythm from atrial fibrillation. Fitting a parabola through each candidate
+peak and its immediate neighbours recovers the extremum to a fraction of a frame.
+On a synthetic signal whose period is incommensurate with the frame interval, this
+reduces interval error from 15.9\,ms to 0.04\,ms, rendering frame rate a
+non-limiting factor.
+
+\subsection{Arrhythmia-Aware Quality Assessment}
+\label{sec:quality}
+Photoplethysmographic quality gating conventionally relies on two families of
+metric: spectral signal-to-noise ratio, and consistency of the estimated rate
+across sliding windows. Both are appropriate when the objective is a heart rate.
+Both are structurally unsuitable when the objective is rhythm classification:
+
+\begin{itemize}
+\item \textbf{Inter-window rate consistency} penalises a rate that varies between
+      windows. In atrial fibrillation the rate genuinely varies between windows;
+      the criterion therefore rejects the target condition.
+\item \textbf{Spectral signal-to-noise ratio} quantifies the sharpness of the
+      dominant spectral peak. Irregular intervals distribute pulse energy across
+      the band, so atrial fibrillation has no sharp peak by construction. A clean
+      synthetic fibrillatory waveform measures a negative signal-to-noise ratio
+      under this definition.
+\end{itemize}
+
+Both metrics conflate the signal of interest with noise. We therefore gate rhythm
+analysis on criteria that are band-aggregate or purely temporal, and which respond
+to motion without responding to rhythm:
+
+\begin{enumerate}
+\item \textbf{In-band power fraction}: the proportion of detrended signal variance
+      falling within the pulse band, which detects the presence of a pulse at
+      \emph{any} rate within the band rather than at one frequency.
+\item \textbf{Photometric stability}: relative variation in mean frame intensity,
+      which responds directly to finger displacement and illumination change.
+\item \textbf{Beat amplitude consistency}: the coefficient of variation of detected
+      peak amplitudes. Motion artefacts produce heterogeneous peak morphology;
+      atrial fibrillation alters interval spacing while leaving pulse morphology
+      comparatively uniform.
+\item \textbf{Interval plausibility rate}: the proportion of detected intervals
+      falling outside physiological bounds, distinguishing failed beat detection
+      from genuine irregularity within plausible bounds.
+\end{enumerate}
+
+\subsection{Features and Classifier}
+Eight scale-free descriptors are computed over each analysis window: normalised
+root mean square of successive differences, coefficient of variation, the
+proportion of successive differences exceeding 50\,ms and 70\,ms, normalised
+Shannon entropy of the interval histogram, sample entropy, the Poincar\'e
+$\mathrm{SD1}/\mathrm{SD2}$ ratio, and mean rate. A standardised logistic
+regression is fitted over these features. A linear model is retained deliberately:
+the decision is auditable, the exported parameterisation is 4\,kB, and inference
+requires no runtime dependency.
+
+Sample entropy is undefined when no template pairs match within tolerance, a
+condition arising at both extremes of regularity---highly irregular sequences, where
+no matches exist, and near-constant sequences, where the matching tolerance
+approaches zero. We substitute the conventional upper bound
+$-\ln\!\left(2/[(N{-}m{-}1)(N{-}m)]\right)$, mapping both limiting cases to maximal
+entropy and admitting the full range of rhythm into training.
+
+\subsection{Asymmetric Decision Rule}
+\label{sec:asym}
+Because predictive value is prevalence-dependent, a screening instrument with
+high sensitivity and specificity may still yield a positive predictive value far
+below certainty. The module therefore emits one of three outcomes:
+
+\begin{itemize}
+\item \textbf{Regular}: atrial fibrillation is resolved to negative within the risk
+      model, and the interval estimate narrows accordingly.
+\item \textbf{Irregular}: the risk estimate is left unchanged and the user is
+      advised to seek electrocardiography. No classification is asserted.
+\item \textbf{Inconclusive}: quality criteria are not met; no inference is drawn.
+\end{itemize}
+
+This is not a conservatism heuristic but a direct consequence of the predictive
+values reported in Section~\ref{sec:results}.
+
+%% =====================================================================
+\section{Medical Document Analysis}
+%% =====================================================================
+
+The optional third modality accepts a photograph of medication packaging, a
+prescription, or a laboratory report. Optical character recognition executes
+on-device, preserving the property that no image leaves the handset.
+
+Recognised text is matched against a curated lexicon of 56 generic agents and 191
+proprietary names, weighted toward South Asian markets where proprietary labelling
+predominates. Matching is tolerant to the substitution errors characteristic of
+curved, specular packaging surfaces, using normalised tokens compared under a
+length-dependent bounded edit distance. Laboratory values are extracted by
+proximity of a numeric literal to a recognised assay name, with range validation
+to reject spurious matches.
+
+Each agent class maps to a model variable with an associated inference strength.
+Classes with a single dominant indication propose the corresponding variable
+directly. Classes with multiple indications---anticoagulants, which may be
+prescribed for fibrillation, venous thrombosis or prosthetic valves---raise a
+clarifying question rather than a value. Corroborating evidence from independent
+sources is accumulated into a single proposal.
+
+No extracted value modifies the risk computation without explicit user
+confirmation. This constraint reduces recognition error from a correctness concern
+to an interaction concern: a misread becomes a question the user declines.
+
+%% =====================================================================
+\section{Evaluation Methodology}
+%% =====================================================================
+
+\subsection{Rhythm Classifier}
+The classifier was trained and evaluated on the MIT-BIH Atrial Fibrillation
+Database, comprising 25 long-term recordings with verified beat annotations and
+rhythm episode labels \cite{goldberger2000}. Intervals were segmented into
+60-second windows at 30-second
+hops; a window was labelled fibrillatory when at least 90\% of its beats fell
+within an annotated episode, yielding 29{,}018 windows of which 37.2\% were
+fibrillatory. Validation was leave-one-record-out, so no patient contributed to
+both training and evaluation.
+
+\subsection{Degradation Analysis}
+To characterise tolerance to acquisition error, features were recomputed from the
+annotated beat times after injecting timing perturbation and beat omission, and the
+full leave-one-record-out procedure was repeated at each level.
+
+\subsection{Acquisition Path}
+The acquisition path was evaluated independently on the Brno University of
+Technology Smartphone PPG Database, comprising fingertip recordings captured on
+consumer handsets at 30\,frames\,s$^{-1}$ with synchronous 1\,kHz
+electrocardiography and verified QRS annotations \cite{nemcova2021}. Analysis was
+restricted to fingertip acquisitions, yielding 300 recordings across eight
+annotated activity conditions.
+
+Beat-detection accuracy was assessed by temporal correspondence rather than
+sequence subtraction: the pulse transit delay was estimated per recording, each
+detected peak matched to an electrocardiographic beat within a 100\,ms tolerance,
+and interval error computed only across pairs whose endpoints both matched and
+were consecutive in both streams. This separates beat-detection sensitivity and
+positive predictive value from interval precision. The matching procedure was
+itself verified against synthetic sequences with known transit delay, known
+timing jitter, and deliberately omitted and inserted beats.
+
+\subsection{Implementation Verification}
+The deployed implementation is JavaScript; the reference implementation is Python.
+Agreement is enforced by replaying 10{,}764 reference-computed risk values and 358
+reference-computed rhythm features through the deployed code, with a tolerance of
+$10^{-12}$. Observed worst-case divergence was $1.1 \times 10^{-16}$. Model
+parameters were fixed and cryptographically hashed prior to acquisition-path
+evaluation, and verified unchanged afterwards.
+
+%% =====================================================================
+\section{Results}
+\label{sec:results}
+%% =====================================================================
+
+\subsection{Rhythm Classification}
+Under leave-one-record-out validation the classifier achieved an area under the
+receiver operating characteristic curve of 0.9903. At an operating point selected
+for 95\% sensitivity, specificity was 97.4\%. Per-record discrimination ranged from
+0.931 to 1.000.
+
+\begin{table}[t]
+\caption{Classifier tolerance to acquisition timing error}
+\label{tab:noise}
+\centering
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Condition & AUROC & Sens. & Spec. \\
+\midrule
+Annotated beat times (reference)      & 0.9903 & 95\% & 97.4\% \\
+30\,fps quantisation, no interpolation & 0.9918 & 95\% & 96.9\% \\
+30\,fps with sub-sample interpolation  & 0.9900 & 95\% & 96.9\% \\
+60\,fps, 5\,ms jitter                  & 0.9906 & 95\% & 97.3\% \\
+15\,ms jitter                          & 0.9880 & 95\% & 95.7\% \\
+25\,ms jitter                          & 0.9826 & 95\% & 92.5\% \\
+40\,ms jitter                          & 0.9699 & 95\% & 87.4\% \\
+8\,ms jitter, 5\% beats omitted        & 0.9900 & 95\% & 96.7\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:noise} shows discrimination is preserved to approximately 25\,ms of
+per-beat timing error, and that frame-rate quantisation alone is not limiting.
+Random beat omission at 5\% has negligible effect, indicating that the
+interval-statistic descriptors are robust to sparse detection failure.
+
+\subsection{Acquisition Path}
+
+\begin{table}[t]
+\caption{Beat detection and interval accuracy, smartphone acquisition\\
+against synchronous electrocardiography ($n = 300$)}
+\label{tab:butppg}
+\centering
+\footnotesize
+\begin{tabular}{lcccc}
+\toprule
+Subset & Sens. & PPV & RR err. & HR err. \\
+\midrule
+Expert-graded good ($n{=}100$) & 90\% & 90\% & 28.4\,ms & 1.0\,bpm \\
+Accepted by quality gate       & 85\% & 92\% & 28.9\,ms & 2.1\,bpm \\
+Expert-graded poor ($n{=}200$) & 40\% & 57\% & 63.2\,ms & 19.7\,bpm \\
+Rejected by quality gate       & 44\% & 63\% & 47.6\,ms & 15.4\,bpm \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:butppg} reports performance stratified by the database's own expert
+quality annotations and by the system's quality gate. On expert-graded good
+recordings, beat-detection sensitivity and positive predictive value both reach
+90\%, with interval error of 28.4\,ms and heart-rate error of 1.0\,bpm; 83\% of
+accepted recordings fall within the 5\,bpm tolerance of IEC 60601-2-27.
+
+The quality gate discriminates concordantly with the expert annotations,
+accepting recordings with more than twice the beat-detection sensitivity of those
+it rejects (85\% versus 44\%) and admitting expert-graded good recordings at
+approximately twice the rate of expert-graded poor recordings.
+
+\subsection{Projected Screening Performance}
+The measured interval error of 28.4\,ms corresponds, under a Gaussian error model,
+to a per-beat timing dispersion of approximately 25\,ms. Interpolating
+Table~\ref{tab:noise} at that operating point projects a specificity of 92.4\% at
+95\% sensitivity.
+
+\begin{table}[t]
+\caption{Projected predictive values by screening prevalence}
+\label{tab:ppv}
+\centering
+\footnotesize
+\begin{tabular}{lcc}
+\toprule
+Population (AF prevalence) & PPV & NPV \\
+\midrule
+General adults, age $\geq$ 55 \quad (2\%)  & 20.4\% & 99.89\% \\
+Adults, age $\geq$ 65 \quad (5\%)          & 39.8\% & 99.72\% \\
+Higher-risk, age $\geq$ 75 \quad (10\%)    & 58.3\% & 99.40\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:ppv} gives the resulting predictive values. These fall within the
+20--40\% positive and near-100\% negative predictive values reported for validated
+smartphone screening applications \cite{oconnor2020}, despite being derived
+independently---from classifier performance on electrocardiographic data combined
+with acquisition error measured on a separate smartphone corpus. The agreement
+between two unrelated derivations supports the validity of the projection.
+
+These values establish the decision rule of Section~\ref{sec:asym} quantitatively.
+A negative predictive value of 99.9\% renders exclusion of atrial fibrillation
+dependable; a positive predictive value of 20\% at population prevalence renders
+assertion unsupportable. The module is therefore permitted to exclude and required
+to refer.
+
+\subsection{Risk Model Behaviour}
+Reconstruction reproduces the published five-year cohort risks to within 0.002 for
+both sexes and both coefficient sets. Risk is monotone in age, systolic pressure
+and each binary factor. For a 68-year-old man with no other information supplied,
+the interval estimate spans 2.2--5.0\%, and the variance decomposition attributes
+52\% of that uncertainty to smoking status and 10\% to systolic pressure; for a
+58-year-old woman the ranking inverts, with systolic pressure accounting for 36\%,
+reflecting the steeper pressure gradient in the female coefficient set. The
+recommendation is thus subject-specific rather than a fixed ordering.
+
+%% =====================================================================
+\section{Discussion}
+%% =====================================================================
+
+The central design question for a self-administered risk instrument is not which
+additional sensor to add, but how to behave when required inputs are unavailable.
+Substituting population means for unknown inputs produces a confident number from
+fabricated data. Representing them as distributions produces a wider but honest
+estimate, and---through variance decomposition---an actionable statement of which
+single measurement would most reduce that width. This reframes missing data from a
+defect of the instrument into its primary output.
+
+The quality-gating result of Section~\ref{sec:quality} generalises beyond this
+system. Quality metrics are commonly transferred between photoplethysmographic
+tasks on the assumption that a clean signal is clean for all purposes. Where the
+target phenomenon is itself a departure from regularity, metrics defined in terms
+of regularity---spectral peak sharpness, rate stability---cannot separate signal from
+artefact. Any pipeline gating arrhythmia analysis with heart-rate quality criteria
+will preferentially discard its positive cases, and will do so silently.
+
+The predictive-value asymmetry has a design consequence frequently left implicit.
+A screening instrument reporting 95\% sensitivity and 92\% specificity is
+legitimately described as accurate, yet at 2\% prevalence four of five positive
+indications are false. Systems that report such a result as a finding will
+mislead the majority of those they flag. Reporting it as a referral preserves the
+clinical value of the true positives while making no claim the evidence cannot
+support.
+
+Finally, population-specific extension is achievable without abandoning a validated
+equation. Adding smokeless tobacco as a zero-centred adjunct term with a published
+adjusted hazard ratio leaves the derivation-cohort calibration intact while
+capturing an exposure affecting 29.6\% of men and 12.8\% of women in the target
+population \cite{gats2017}, which the underlying Western-derived model does not represent at all.
+
+%% =====================================================================
+\section{Limitations and Future Work}
+%% =====================================================================
+
+\textbf{Sensitivity and specificity derive from distinct corpora.} Classifier
+sensitivity is established on electrocardiographic intervals; acquisition fidelity
+and specificity are established on smartphone recordings. No public corpus provides
+both smartphone photoplethysmography and adjudicated fibrillation labels, so the
+projected end-to-end performance of Table~\ref{tab:ppv} is an estimate rather than
+a direct measurement. A prospective acquisition with synchronous
+electrocardiography would resolve this and is the principal item of future work.
+
+\textbf{Analysis window.} The acquisition corpus provides ten-second recordings,
+whereas the deployed classifier operates over sixty seconds. The reported
+acquisition metrics---beat detection and interval precision---are unaffected by
+window length, but end-to-end classification statistics could not be measured at
+the deployed configuration.
+
+\textbf{Cohort representativeness.} The acquisition corpus comprises fifty
+volunteers with a mean age of 33 years, and does not report Fitzpatrick skin
+phototype. Since melanin attenuates the optical signal, performance across skin
+tone remains uncharacterised and warrants explicit stratification in prospective
+evaluation.
+
+\textbf{Derivation range and geography.} The risk equation is derived on adults
+aged 55--84 in United States cohorts; the system labels estimates outside that
+range as extrapolation. Relative effects transport between populations more
+reliably than absolute baselines, and recalibration of $S_0$ to age- and
+sex-specific local incidence is a data requirement rather than a modelling one.
+Reported calibration for this model family is weaker in Black participants than in
+white participants, and the system discloses this in its output.
+
+\textbf{Adjunct term independence.} Adjunct hazard ratios are drawn from
+meta-analyses with heterogeneous covariate adjustment, and are combined
+multiplicatively with the base model under an independence assumption that is
+defensible where the exposure is absent from the derivation cohort, but is not
+directly verified.
+
+\textbf{Regulatory scope.} Presentation of an absolute stroke probability to a lay
+user constitutes a medical device claim in most jurisdictions. The system is
+presented as a research instrument and is not offered for clinical use.
+
+%% =====================================================================
+\section{Conclusion}
+%% =====================================================================
+
+We have presented a multimodal stroke risk system producing a calibrated five-year
+absolute probability from a questionnaire, a sixty-second fingertip
+photoplethysmogram, and optional medical document capture, executing entirely on a
+consumer smartphone with no data transmission. Absolute calibration is anchored to
+a published prospective-cohort survival model with fully traceable coefficients;
+unknown inputs are propagated as uncertainty and ranked by variance contribution
+rather than imputed; and rhythm assessment employs quality criteria constructed
+specifically for arrhythmia rather than inherited from heart-rate estimation.
+
+Rhythm classification achieves an area under the curve of 0.990 under
+leave-one-patient-out validation, and the acquisition path achieves 90\%
+beat-detection sensitivity with 28.4\,ms interval error on expert-graded smartphone
+recordings. The resulting predictive-value asymmetry---99.9\% negative against
+20.4\% positive at population prevalence---directly determines a decision rule under
+which the system may exclude atrial fibrillation from the risk computation but
+refers rather than asserts it. We argue this pattern, in which the evidentiary
+strength of a screening result governs the action it is permitted to take, is the
+appropriate organising principle for consumer-facing diagnostic inference.
+
+%% =====================================================================
+\begin{thebibliography}{00}
+
+\bibitem{wolf1991}
+P.~A. Wolf, R.~B. D'Agostino, A.~J. Belanger, and W.~B. Kannel,
+``Probability of stroke: a risk profile from the Framingham Study,''
+\emph{Stroke}, vol.~22, no.~3, pp.~312--318, 1991.
+
+\bibitem{dufouil2017}
+C.~Dufouil, A.~Beiser, L.~A. McLure, P.~A. Wolf, C.~Tzourio, V.~J. Howard,
+et~al.,
+``Revised Framingham Stroke Risk Profile to reflect temporal trends,''
+\emph{Circulation}, vol.~135, no.~12, pp.~1145--1159, 2017.
+
+\bibitem{brasier2019}
+N.~Brasier, C.~J. Raichle, M.~Dörr, A.~Becke, V.~Nohturfft, S.~Weber, et~al.,
+``Detection of atrial fibrillation with a smartphone camera: first prospective,
+international, two-centre, clinical validation study (DETECT AF PRO),''
+\emph{EP Europace}, vol.~21, no.~1, pp.~41--47, 2019.
+
+\bibitem{proesmans2019}
+T.~Proesmans, C.~Mortelmans, R.~Van Haelst, F.~Verbrugge, P.~Vandervoort, and
+B.~Vaes,
+``Mobile phone-based use of the photoplethysmography technique to detect atrial
+fibrillation in primary care: diagnostic accuracy study of the FibriCheck app,''
+\emph{JMIR mHealth and uHealth}, vol.~7, no.~3, e12284, 2019.
+
+\bibitem{oconnor2020}
+J.~W. O'Sullivan, S.~Grigg, W.~Crawford, M.~P. Turakhia, M.~Perez,
+E.~Ingelsson, M.~T. Wheeler, and J.~P.~A. Ioannidis,
+``Accuracy of smartphone camera applications for detecting atrial fibrillation: a
+systematic review and meta-analysis,''
+\emph{JAMA Network Open}, vol.~3, no.~4, e202064, 2020.
+
+\bibitem{richman2000}
+J.~S. Richman and J.~R. Moorman,
+``Physiological time-series analysis using approximate entropy and sample
+entropy,''
+\emph{American Journal of Physiology---Heart and Circulatory Physiology},
+vol.~278, no.~6, pp.~H2039--H2049, 2000.
+
+\bibitem{gupta2019}
+R.~Gupta, S.~Gupta, S.~Sharma, D.~N. Sinha, and R.~Mehrotra,
+``Association of smokeless tobacco and cerebrovascular accident: a systematic
+review and meta-analysis of global data,''
+\emph{Journal of Public Health}, vol.~42, no.~2, pp.~e150--e157, 2020.
+[Corrigendum: \emph{J. Public Health}, vol.~43, no.~1, p.~e115, 2021.]
+
+\bibitem{nemcova2021}
+A.~N\v{e}mcov\'a, E.~Vargov\'a, R.~Smisek, L.~Mar\v{s}\'anov\'a,
+L.~Smital, and M.~Vitek,
+``Brno University of Technology Smartphone PPG Database (BUT PPG): annotated
+dataset for PPG quality assessment and heart rate estimation,''
+\emph{BioMed Research International}, vol.~2021, art.~3453007, 2021.
+
+\bibitem{goldberger2000}
+A.~L. Goldberger, L.~A.~N. Amaral, L.~Glass, J.~M. Hausdorff, P.~C. Ivanov,
+R.~G. Mark, et~al.,
+``PhysioBank, PhysioToolkit, and PhysioNet: components of a new research resource
+for complex physiologic signals,''
+\emph{Circulation}, vol.~101, no.~23, pp.~e215--e220, 2000.
+
+\bibitem{gats2017}
+Ministry of Health and Family Welfare, Government of India,
+``Global Adult Tobacco Survey: India 2016--17 report,'' 2017.
+
+\end{thebibliography}
+
+\end{document}

@@ -24,5 +24,5 @@ for marker in ["__MODEL_DATA__", "__BASELINE_DATA__", "__SHAP_DATA__",
                "__RPPG_CSS__", "__RPPG_SECTION__", "__RPPG_CORE__", "__RPPG_UI__"]:
     assert marker not in tpl, "unreplaced placeholder: " + marker
 
-open(p("index.html"), "w").write(tpl)
+open(p("..", "index.html"), "w").write(tpl)
 print("wrote index.html  %.2f MB" % (len(tpl) / 1e6))
