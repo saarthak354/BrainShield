@@ -397,6 +397,18 @@ These fall inside the 20–40% positive and near-100% negative predictive values
 for validated smartphone screening applications, despite being derived independently.
 They are what make the asymmetric decision rule mandatory rather than cautious.
 
+The table is conservative, and two later measurements say so. Substituting the DeepBeat
+excellent-quality operating point gives 19.7% / 99.81% at 2% prevalence — within a point,
+from a different corpus and sensing site. Substituting the directly measured MIMIC
+fingertip operating point gives **31.0% / 99.94%**. The projection was built from
+classifier performance on ECG intervals combined with acquisition error measured
+separately; having since measured the two together, the assembled estimate turns out to
+have understated the system rather than flattered it.
+
+What does not change is the asymmetry. A negative remains dependable at every operating
+point examined, and a positive remains wrong more often than not. The decision rule
+follows from the shape of those numbers, not their exact value.
+
 ---
 
 ## 8. Verification infrastructure
