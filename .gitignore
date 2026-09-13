@@ -13,9 +13,11 @@ data/
 #   butppg_cache.json  -> src/af/cache_butppg.py
 #   afdb_*.npz         -> src/af/build_afdb.py
 #   deepbeat_*         -> src/af/prep_deepbeat.py
+#   mimic_af_*         -> src/af/prep_mimic_af.py
 src/af/gdansk/
 src/af/butppg_cache.json
 src/af/deepbeat_prepared.json
+src/af/mimic_af_prepared_*.json
 src/af/*.npz
 
 # ---- regenerable test fixtures ----
@@ -26,6 +28,7 @@ tests/risk_parity_fixture.json
 src/af/butppg_results.json
 src/af/butppg_js_results.json
 src/af/deepbeat_results.json
+src/af/mimic_af_results_*.json
 
 # ---- LaTeX build products ----
 paper/*.log

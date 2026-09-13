@@ -38,7 +38,8 @@ repository** — all are excluded via `.gitignore` and re-fetchable by the scrip
 | **Gupta et al. 2020**, *J Public Health* 42(2):e150–e157 | Meta-analysis: stroke RR 1.35 (1.20–1.50) for chewing tobacco | Smokeless tobacco adjunct term | Open access |
 | **GATS-2 India 2016–17** | Smokeless tobacco prevalence: 29.6% men, 12.8% women | Population priors for unknown inputs | Public report |
 | **NFHS-5 (2019–21)** | Indian hypertension prevalence, awareness, diabetes prevalence | Population priors | Public report |
-| **Stanford DeepBeat** (Synapse syn21985690) | 108 AF and 67 non-AF subjects, 500k+ PPG segments at 32 Hz with rhythm labels | *Prepared for, not yet run* — requires a free Synapse login | Free account, no data use agreement |
+| **MIMIC PERform AF** (Charlton et al., Zenodo) | Fingertip PPG + ECG, 35 ICU adults (19 AF / 16 not), 20 min each at 125 Hz | Classifier sensitivity at the deployed 60 s window on fingertip PPG | Open, ODC-BY, no login; `src/af/prep_mimic_af.py` |
+| **Stanford DeepBeat** (Synapse syn21985690) | Wrist PPG, 25 s segments at 32 Hz with rhythm and signal-quality labels. Held-out test split: 17,617 segments, 22 subjects (6 AF) | Classifier sensitivity on PPG-derived rather than ECG-derived intervals | Free Synapse account; `src/af/prep_deepbeat.py` |
 
 ---
 
@@ -300,6 +301,87 @@ and cancelling in the count** while destroying the intervals, producing rmssd_no
 than typical AF on a healthy subject. Beat count is therefore not a validity check. This
 is recorded for the next iteration; the algorithm was not altered.
 
+### MIMIC PERform AF — the deployed window on fingertip PPG
+
+DeepBeat answered whether the classifier survives pulse-wave intervals, but only on 25 s
+wrist reflectance. MIMIC PERform AF answers the sharper question: does it work at the
+**deployed 60 s window** on **fingertip** PPG — transmission through a digit, the same
+optical geometry as a torch-lit camera. 35 ICU adults, 19 in AF, 20 minutes each, cut
+into 659 non-overlapping 60 s windows.
+
+| Sampling rate | Sensitivity | Specificity | AUROC |
+|---|---|---|---|
+| **30 Hz** (camera frame rate) | **97.0%** [352/363] | **95.6%** [283/296] | **0.9918** |
+| 125 Hz (native) | 96.7% | 94.9% | 0.9902 |
+| *MIT-BIH, ECG intervals* | *95%* | *97.4%* | *0.9903* |
+
+95% CIs at 30 Hz: sensitivity [94.7%, 98.3%], specificity [92.6%, 97.4%]. Per subject,
+**19/19 AF and 15/16 sinus correct**. Every window scored; none rejected.
+
+Two things worth drawing out.
+
+**Frame rate is not the bottleneck.** Decimating 125 Hz → 30 Hz moved sensitivity 0.3
+points and specificity 0.7 — inside the confidence intervals. The sub-sample parabolic
+interpolation was built precisely so that 33 ms frame quantisation would not dominate
+beat timing, and this measures that rather than assuming it.
+
+**The predictive values improve.** At this operating point, 2% prevalence gives PPV
+31.0% and NPV 99.94%, against the 20.4% / 99.89% projected from BUT PPG. The projection
+was conservative. The asymmetry that forces the decision rule is unchanged — a positive
+is still wrong more often than not.
+
+Caveats that belong with the numbers: these are contact pulse oximeters on perfused ICU
+patients, not a camera held by a person, so this isolates the classifier and says nothing
+about acquisition. Labels are per recording, so an AF patient who converted to sinus
+mid-recording contributes mislabelled windows — 35 subjects is the effective sample size,
+not 659.
+
+### DeepBeat — sensitivity on PPG-derived intervals
+
+Every sensitivity figure up to this point came from MIT-BIH, i.e. from intervals timed
+off the QRS complex. DeepBeat is the one accessible corpus pairing PPG-derived intervals
+with rhythm labels, so it answers the question the others cannot: does the classifier
+still separate rhythms when the intervals come from a pulse wave?
+
+Only the held-out `test.npz` split was downloaded; `train.npz` and `validate.npz` were
+never accessed.
+
+**On excellent-quality segments: sensitivity 91.5%, specificity 92.4%** — against 95%
+and 97.4% on ECG intervals. Softer peaks and respiratory amplitude modulation cost about
+three points of sensitivity and five of specificity, and no more.
+
+| Signal quality | Segments | Sensitivity | Specificity |
+|---|---|---|---|
+| Excellent | 3,246 | 91.5% | 92.4% |
+| Acceptable | 2,032 | 91.7% | 81.0% |
+| Poor | 12,336 | 76.1% | 40.6% |
+
+Performance falls monotonically with signal quality. 70% of this corpus is graded poor,
+which is what continuous wrist wear looks like — not deliberate fingertip capture — so
+the unstratified figures (78.9% / 56.6%, AUROC 0.718) describe the corpus more than the
+classifier.
+
+Applying the excellent-quality operating point at 2% prevalence gives **PPV 19.7%, NPV
+99.81%** — within one point of the 20.4% / 99.89% projected independently from BUT PPG.
+A third derivation, from a different corpus, a different anatomical site and a different
+sensing modality, landing on the same numbers.
+
+Two structural facts govern how these should be read. The rhythm label is **constant
+within a subject**, so 17,617 segments are 22 observations, not 17,617; per subject on
+excellent-quality segments the result is 4/4 fibrillatory and 6/6 sinus correct, which
+is worth reporting only as counts. And the segments are 25 s against the deployed 60 s,
+so entropy terms rest on ~29 intervals instead of ~70.
+
+Two bugs were fixed in the harness before any number was trusted. The prep script's
+shape heuristic picked the wrong axis on the `(n, 800, 1)` signal array; more seriously,
+it took column 0 of the one-hot `rhythm` array, which would have **inverted every
+label** without failing. It now argmaxes, asserts the arrays are genuinely one-hot, and
+asserts AF is the minority class. Separately, the quality-label ordering was assumed
+backwards; it was established empirically instead, from mean in-band power of 0.629 /
+0.838 / 0.917 across classes 0/1/2, making class 0 *poor* and class 2 *excellent*. Taken
+at face value the table above would have shown the classifier performing worse on
+cleaner signal — a result that reads as a mystery rather than as the bug it was.
+
 ### Projected screening performance
 
 The measured 28.4 ms interval error corresponds to ~25 ms per-beat dispersion, which the
@@ -368,13 +450,29 @@ python3 src/af/cache_butppg.py           # download BUT PPG (~30 min)
 node tests/validate_butppg.js
 node tests/validate_gdansk.js            # needs the Gdansk CSVs in src/af/gdansk/
 
+# --- MIMIC PERform AF (open, no login) ---
+curl -LO https://zenodo.org/records/15906524/files/mimic_perform_af_wfdb.zip
+curl -LO https://zenodo.org/records/15906524/files/mimic_perform_non_af_wfdb.zip
+unzip -q mimic_perform_af_wfdb.zip -d af && unzip -q mimic_perform_non_af_wfdb.zip -d nonaf
+python3 src/af/prep_mimic_af.py af/mimic_perform_af_wfdb nonaf/mimic_perform_non_af_wfdb --fs 30
+node tests/validate_mimic_af.js src/af/mimic_af_prepared_30hz.json
+
+# --- DeepBeat (needs a free Synapse account; test split only) ---
+pip install synapseclient
+# create ~/.synapseConfig with [authentication] / authtoken = <personal access token>
+synapse get syn22006407                      # test.npz, 108 MB
+python3 src/af/prep_deepbeat.py test.npz
+node tests/validate_deepbeat.js
+
 # --- build the pages ---
 python3 src/build_assess.py
 python3 src/build_risk5.py
 python3 src/build.py
 
 # --- the paper ---
-cd paper && tectonic -X compile brainshield_ieee.tex
+cd paper && pdflatex brainshield_ieee.tex && pdflatex brainshield_ieee.tex
+# needs IEEEtran, newtx, cite, algorithms, carlisle, oberdiek, xpatch, xstring.
+# a minimal toolchain: curl -sL https://yihui.org/tinytex/install-bin-unix.sh | sh
 ```
 
 Third-party data is excluded from version control; each script re-fetches what it needs.
@@ -384,12 +482,17 @@ The Gdańsk CSVs are currently fetched manually from the upstream repository.
 
 ## 10. Prepared but not yet run
 
-**Stanford DeepBeat sensitivity.** `src/af/prep_deepbeat.py` and
-`tests/validate_deepbeat.js` are written and ready. This is the one accessible corpus
-pairing PPG-derived intervals with AF labels, and would convert sensitivity from an
-ECG-derived figure into a PPG-derived one. It needs `test.npz` from Synapse
-syn21985690, which requires a free login (there is no data use agreement). Use the
-held-out split only — validating on `train.npz` would inflate the result.
+**Quality-gate behaviour across acquisition modalities.** The DeepBeat run scored
+17,614 of 17,617 segments — it rejected three. It therefore accepted all 12,336
+poor-quality segments and returned 40.6% specificity on them. Signal quality is the
+dominant term in whether this system is right, so this matters more than any remaining
+accuracy work.
+
+One qualification before treating it as a verdict on the deployed gate: the validator
+calls `RPPG.analyse` directly and never invokes `afQuality()`, which needs raw camera
+frames for photometric stability and amplitude CV. So what this measures is that *the
+path exercised here* filters almost nothing. Whether the real gate would have caught
+these is untested — and if it would not, that is the highest-value fix outstanding.
 
 **Recalibration of S₀ to Indian incidence.** The relative effects transport between
 populations; the absolute baseline does not. This needs age- and sex-specific incidence

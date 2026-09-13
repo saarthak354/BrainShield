@@ -52,9 +52,9 @@ and validated **leave-one-patient-out**, so no patient appears in both training 
 | Per-patient AUROC range | 0.931 – 1.000 |
 | Exported classifier | **4 KB**, no runtime dependency |
 
-### Independent validation on real smartphone recordings
+### Independent validation
 
-Two external corpora, neither used in development.
+Four external corpora, none used in development.
 
 **BUT PPG** (PhysioNet) — 300 fingertip recordings on consumer handsets with
 synchronous 1 kHz ECG:
@@ -76,6 +76,23 @@ window length:
 
 Two unrelated corpora, different countries and handsets, agreeing to within **0.7
 percentage points**.
+
+**MIMIC PERform AF** — fingertip recordings from 35 adults with rhythm labels, 19 in
+atrial fibrillation, evaluated at the deployed 60-second window:
+
+| | |
+|---|---|
+| Sensitivity | **97.0%** |
+| Specificity | **95.6%** |
+| AUROC | **0.9918** |
+| Correct per subject | **19/19** AF, **15/16** sinus |
+
+Decimating the same recordings to 30 Hz — a phone camera's frame rate — changes
+sensitivity by 0.3 points and specificity by 0.7, inside the confidence intervals.
+Frame rate is not the limiting factor.
+
+**Stanford DeepBeat** — wrist recordings with rhythm labels, a different sensing site
+again: **91.5% sensitivity, 92.4% specificity** on excellent-quality segments.
 
 ---
 

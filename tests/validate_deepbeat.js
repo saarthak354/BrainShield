@@ -40,7 +40,7 @@ for (const r of recs) {
     const n = r.ppg.length, fsHz = r.fs;
     const times = []; for (let i = 0; i < n; i++) times.push(i / fsHz);
     const samples = {times, r: r.ppg, g: r.ppg, b: r.ppg};
-    const row = {id: r.id, af: r.af, quality: r.quality, call: null, p: null};
+    const row = {id: r.id, subject: r.subject, af: r.af, quality: r.quality, call: null, p: null};
 
     const res = RPPG.analyse(samples, {mode: "finger", fs: Math.round(fsHz)});
     if (!res.ok) { row.call = "unusable"; row.why = res.reason; out.push(row); continue; }
@@ -111,13 +111,67 @@ if (qs.length > 1) {
     console.log("\n" + "-".repeat(78));
     console.log("BY DEEPBEAT'S OWN SIGNAL-QUALITY LABEL");
     console.log("-".repeat(78));
+    const QNAME = {0: "poor", 1: "acceptable", 2: "excellent"};
     for (const q of qs) {
         const s = scored.filter(r => r.quality === q);
         const a = s.filter(r => r.af === AFLBL);
         const b = s.filter(r => r.af !== AFLBL);
         const se = a.length ? a.filter(r=>r.call==="irregular").length/a.length : NaN;
         const sp = b.length ? b.filter(r=>r.call==="regular").length/b.length : NaN;
-        console.log(`  quality=${q}  n=${String(s.length).padStart(5)}   sensitivity ${(100*se).toFixed(1)}%   specificity ${(100*sp).toFixed(1)}%`);
+        console.log(`  ${(QNAME[q]||q).padEnd(10)} n=${String(s.length).padStart(5)}   sensitivity ${(100*se).toFixed(1)}%  [${a.filter(r=>r.call==="irregular").length}/${a.length}]   specificity ${(100*sp).toFixed(1)}%  [${b.filter(r=>r.call==="regular").length}/${b.length}]`);
     }
 }
+
+/* ----------------------------------------------------------------------------
+ * Per-subject aggregation.
+ *
+ * The rhythm label is constant within a subject, so the 17617 segments are not
+ * 17617 independent observations -- they are 22. Segment-level intervals would be
+ * roughly sqrt(800) times too narrow. A subject is called AF if the majority of
+ * its scored segments are called irregular.
+ * -------------------------------------------------------------------------- */
+function subjectTable(rows, caption) {
+    const m = new Map();
+    for (const r of rows) { if (!m.has(r.subject)) m.set(r.subject, []); m.get(r.subject).push(r); }
+    let tp=0, fn=0, fp=0, tn=0;
+    for (const k of [...m.keys()].sort((a,b)=>Number(a)-Number(b))) {
+        const rs = m.get(k);
+        const truth = rs[0].af === AFLBL;
+        const call = rs.filter(r => r.call === "irregular").length / rs.length > 0.5;
+        if (truth && call) tp++; else if (truth && !call) fn++;
+        else if (!truth && call) fp++; else tn++;
+    }
+    const se = (tp+fn) ? 100*tp/(tp+fn) : NaN, sp = (tn+fp) ? 100*tn/(tn+fp) : NaN;
+    console.log(`  ${caption}`);
+    console.log(`    subjects ${m.size}   sensitivity ${se.toFixed(1)}%  [${tp}/${tp+fn}]   specificity ${sp.toFixed(1)}%  [${tn}/${tn+fp}]`);
+}
+
+const bySubj = new Map();
+for (const r of scored) {
+    if (!bySubj.has(r.subject)) bySubj.set(r.subject, []);
+    bySubj.get(r.subject).push(r);
+}
+console.log("-".repeat(78));
+console.log("PER SUBJECT  (label is constant within subject; effective n = " + bySubj.size + ")");
+console.log("-".repeat(78));
+console.log("  subject   truth    scored   frac called irregular   subject call");
+let sTP=0, sFN=0, sFP=0, sTN=0;
+const keys = [...bySubj.keys()].sort((a,b) => Number(a) - Number(b));
+for (const k of keys) {
+    const rs = bySubj.get(k);
+    const truth = rs[0].af === AFLBL;
+    const frac = rs.filter(r => r.call === "irregular").length / rs.length;
+    const call = frac > 0.5;
+    if (truth && call) sTP++; else if (truth && !call) sFN++;
+    else if (!truth && call) sFP++; else sTN++;
+    console.log(`  ${String(k).padStart(7)}   ${(truth?"AF":"non-AF").padEnd(7)} ${String(rs.length).padStart(6)}   ${frac.toFixed(3).padStart(19)}   ${call?"irregular":"regular"}`);
+}
+const sSens = (sTP+sFN) ? sTP/(sTP+sFN) : NaN, sSpec = (sTN+sFP) ? sTN/(sTN+sFP) : NaN;
+console.log(`\n  SUBJECT-LEVEL sensitivity ${(100*sSens).toFixed(1)}%  [${sTP}/${sTP+sFN}]   specificity ${(100*sSpec).toFixed(1)}%  [${sTN}/${sTN+sFP}]`);
+console.log(`  With 6 AF and 16 non-AF subjects these rest on very few units; report them`);
+console.log(`  with the counts, never as a bare percentage.\n`);
+subjectTable(scored.filter(r => r.quality === 2),
+             "Restricted to EXCELLENT-quality segments (the stratum deployment targets):");
+subjectTable(scored.filter(r => r.quality !== 0),
+             "Restricted to excellent + acceptable:");
 console.log();

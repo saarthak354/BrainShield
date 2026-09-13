@@ -11,6 +11,9 @@
 % package leaves TU/ptm undefined and silently substitutes Latin Modern, so use the
 % newtx family, which provides Times-compatible text and maths on all engines.
 % newtxmath must follow amssymb, and \Bbbk is defined by both.
+% T1 encoding is required for the ogonek and other accents in the bibliography,
+% and is the encoding newtx expects.
+\usepackage[T1]{fontenc}
 \let\Bbbk\relax
 \usepackage{newtxtext,newtxmath}
 \usepackage{algorithmic}
@@ -71,8 +74,11 @@ gate photoplethysmographic heart-rate estimation are structurally incompatible
 with arrhythmia detection. Independent evaluation on 300 smartphone recordings
 with synchronous electrocardiographic ground truth yields 90\% beat-detection
 sensitivity, 90\% positive predictive value, and 28.4\,ms inter-beat interval
-error on expert-graded recordings. Projected screening performance gives a
-negative predictive value of 99.9\% at population prevalence, supporting an
+error on expert-graded recordings. Evaluated at the deployed sixty-second window on
+fingertip photoplethysmography from 35 adults with rhythm labels, the classifier attains
+97.0\% sensitivity and 95.6\% specificity, statistically unchanged when the signal is
+decimated to the 30\,Hz frame rate of a smartphone camera. Screening performance gives a
+negative predictive value above 99.9\% at population prevalence, supporting an
 asymmetric decision rule in which a regular rhythm resolves atrial fibrillation
 within the risk model while an irregular rhythm produces a referral rather than a
 classification.
@@ -332,6 +338,7 @@ over a central region of interest for each colour channel, and the channel
 carrying the cleanest pulse is selected automatically.
 
 \subsection{Sub-Sample Beat Localisation}
+\label{sec:subsample}
 At a typical capture rate of 30\,frames\,s$^{-1}$, beat timing is quantised to
 33\,ms---comparable in magnitude to the beat-to-beat variability that distinguishes
 sinus rhythm from atrial fibrillation. Fitting a parabola through each candidate
@@ -474,6 +481,38 @@ positive predictive value from interval precision. The matching procedure was
 itself verified against synthetic sequences with known transit delay, known
 timing jitter, and deliberately omitted and inserted beats.
 
+\subsection{Deployed Window Length}
+The fingertip acquisition corpus provides ten-second clips, whereas the classifier
+operates over sixty seconds. Evaluation at the deployed configuration used an
+independent smartphone corpus recorded at the Gda\'{n}sk University of Technology
+\cite{bancerewicz2025}, comprising one sixty-one-second acquisition with aligned
+electrocardiography and three continuous recordings of approximately ten minutes from
+healthy volunteers, segmented into non-overlapping sixty-second windows.
+
+\subsection{Rhythm Classification at the Deployed Configuration}
+\label{sec:mimicmethod}
+The MIMIC PERform AF corpus \cite{charlton2022} provides simultaneous fingertip
+photoplethysmography and electrocardiography from 35 critically ill adults, 19 in atrial
+fibrillation and 16 not, over twenty minutes each at 125\,Hz. It is the only openly
+accessible rhythm-labelled corpus that is both fingertip---transmission through the
+digit, the optical geometry of a torch-illuminated camera capture---and long enough to
+segment at the deployed sixty-second window. Recordings were divided into
+non-overlapping sixty-second windows, discarding windows in which the sensor was
+disconnected, yielding 659 windows. To separate the contribution of frame rate from that
+of the sensing site, the evaluation was repeated on the same windows decimated to
+30\,Hz, the rate at which the system deploys. Rhythm labels are assigned per recording,
+so results are additionally aggregated per subject.
+
+\subsection{Rhythm Classification on Wrist Photoplethysmographic Intervals}
+Classifier sensitivity established on MIT-BIH is measured on intervals derived from the
+QRS complex. To measure it on intervals derived from a pulse wave instead, the frozen
+classifier was applied to the held-out test split of the DeepBeat corpus
+\cite{torressoto2020}: 17{,}617 wrist photoplethysmographic segments of twenty-five
+seconds at 32\,Hz drawn from 22 subjects, each segment carrying a rhythm label and a
+three-level signal-quality label. The rhythm label is constant within a subject, so the
+effective sample size is the subject count and results are additionally aggregated per
+subject. The training and validation splits were not accessed.
+
 \subsection{Implementation Verification}
 The deployed implementation is JavaScript; the reference implementation is Python.
 Agreement is enforced by replaying 10{,}764 reference-computed risk values and 358
@@ -550,6 +589,78 @@ accepting recordings with more than twice the beat-detection sensitivity of thos
 it rejects (85\% versus 44\%) and admitting expert-graded good recordings at
 approximately twice the rate of expert-graded poor recordings.
 
+\subsection{Deployed Window Length}
+At the deployed sixty-second configuration, specificity on continuous recordings from
+healthy volunteers was 91.7\%---22 of 24 windows called regular. This is a direct
+measurement at the operating configuration rather than an extrapolation from shorter
+clips, and it agrees to within 0.7 percentage points with the 92.4\% projected below
+from acquisition error measured on an unrelated corpus.
+
+\subsection{Rhythm Classification at the Deployed Configuration}
+
+\begin{table}[t]
+\caption{Frozen classifier on fingertip photoplethysmography at the\\
+deployed sixty-second window ($n = 659$ windows, 35 subjects)}
+\label{tab:mimic}
+\centering
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Sampling rate & Sensitivity & Specificity & AUROC \\
+\midrule
+30\,Hz (deployed frame rate) & 97.0\% & 95.6\% & 0.9918 \\
+125\,Hz (native)             & 96.7\% & 94.9\% & 0.9902 \\
+\midrule
+\emph{MIT-BIH, ECG intervals} & \emph{95\%} & \emph{97.4\%} & \emph{0.9903} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:mimic} evaluates the frozen classifier at both the deployed window length
+and the deployed anatomical site. Sensitivity is 97.0\% (95\% CI 94.7--98.3\%) and
+specificity 95.6\% (92.6--97.4\%) at 30\,Hz, with an area under the curve of 0.9918
+against 0.9903 on electrocardiographic intervals. Per subject, all 19 fibrillatory
+subjects and 15 of 16 sinus-rhythm subjects were classified correctly. Every window was
+scored; none was rejected as unusable.
+
+Decimating from 125\,Hz to 30\,Hz changes sensitivity by 0.3 points and specificity by
+0.7---within the confidence intervals of both. Camera frame rate is therefore not the
+limiting factor in interval-based rhythm discrimination, which is the outcome the
+sub-sample interpolation of Section~\ref{sec:subsample} is intended to produce, measured
+here rather than assumed.
+
+\subsection{Rhythm Classification on Wrist Photoplethysmographic Intervals}
+
+\begin{table}[t]
+\caption{Frozen classifier on wrist photoplethysmography, stratified\\
+by the corpus signal-quality label ($n = 17{,}614$ scored)}
+\label{tab:deepbeat}
+\centering
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+Signal quality & Segments & Sensitivity & Specificity \\
+\midrule
+Excellent  & 3{,}246  & 91.5\% & 92.4\% \\
+Acceptable & 2{,}032  & 91.7\% & 81.0\% \\
+Poor       & 12{,}336 & 76.1\% & 40.6\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:deepbeat} reports the frozen classifier applied to intervals derived from
+a pulse wave rather than from electrocardiography. On excellent-quality segments
+sensitivity is 91.5\% and specificity 92.4\%, against 95\% and 97.4\% on
+electrocardiographic intervals: the transition from QRS timing to pulse-wave timing,
+with its softer peaks and respiratory amplitude modulation, costs approximately three
+points of sensitivity and five of specificity. Performance declines monotonically with
+signal quality, and 70\% of this corpus is graded poor, reflecting continuous wrist wear
+rather than deliberate fingertip acquisition.
+
+Aggregated per subject over excellent-quality segments, all four fibrillatory subjects
+and all six sinus-rhythm subjects were classified correctly. With ten subjects these are
+reported as counts rather than as rates.
+
 \subsection{Projected Screening Performance}
 The measured interval error of 28.4\,ms corresponds, under a Gaussian error model,
 to a per-beat timing dispersion of approximately 25\,ms. Interpolating
@@ -578,6 +689,18 @@ smartphone screening applications \cite{oconnor2020}, despite being derived
 independently---from classifier performance on electrocardiographic data combined
 with acquisition error measured on a separate smartphone corpus. The agreement
 between two unrelated derivations supports the validity of the projection.
+
+The photoplethysmographic operating point of Table~\ref{tab:deepbeat} provides a third,
+independent route to the same quantity: 91.5\% sensitivity at 92.4\% specificity yields
+19.7\% positive and 99.81\% negative predictive value at 2\% prevalence, within one
+percentage point of Table~\ref{tab:ppv} despite deriving from a different corpus, a
+different anatomical site and a different sensing modality.
+
+Table~\ref{tab:ppv} is nonetheless conservative. Applying the measured fingertip
+operating point of Table~\ref{tab:mimic} in place of the projection gives 31.0\%
+positive and 99.94\% negative predictive value at 2\% prevalence. The qualitative
+asymmetry that governs the decision rule is unchanged: a negative result remains
+dependable and a positive result remains, more often than not, wrong.
 
 These values establish the decision rule of Section~\ref{sec:asym} quantitatively.
 A negative predictive value of 99.9\% renders exclusion of atrial fibrillation
@@ -634,18 +757,26 @@ population \cite{gats2017}, which the underlying Western-derived model does not 
 %% =====================================================================
 
 \textbf{Sensitivity and specificity derive from distinct corpora.} Classifier
-sensitivity is established on electrocardiographic intervals; acquisition fidelity
-and specificity are established on smartphone recordings. No public corpus provides
-both smartphone photoplethysmography and adjudicated fibrillation labels, so the
-projected end-to-end performance of Table~\ref{tab:ppv} is an estimate rather than
-a direct measurement. A prospective acquisition with synchronous
-electrocardiography would resolve this and is the principal item of future work.
+sensitivity is established on electrocardiographic intervals and corroborated on both
+fingertip and wrist photoplethysmographic intervals; acquisition fidelity and specificity are established on
+smartphone fingertip recordings. No public corpus provides smartphone \emph{fingertip}
+photoplethysmography with adjudicated fibrillation labels, so the end-to-end performance
+of Table~\ref{tab:ppv} remains assembled from separate measurements rather than observed
+directly. A prospective acquisition with synchronous electrocardiography would resolve
+this and is the principal item of future work.
 
-\textbf{Analysis window.} The acquisition corpus provides ten-second recordings,
-whereas the deployed classifier operates over sixty seconds. The reported
-acquisition metrics---beat detection and interval precision---are unaffected by
-window length, but end-to-end classification statistics could not be measured at
-the deployed configuration.
+\textbf{Dependence on signal quality.} Table~\ref{tab:deepbeat} shows specificity falling
+to 40.6\% on segments the corpus grades poor. Reported performance is therefore
+conditional on the quality gate admitting only adequate recordings. That gate was
+characterised on deliberate fingertip acquisition, and its behaviour on continuous wrist
+wear---the modality of Table~\ref{tab:deepbeat}---has not been separately quantified.
+
+\textbf{Analysis window.} Classification has been measured at the deployed sixty-second
+window on fingertip photoplethysmography (Table~\ref{tab:mimic}) and on continuous
+smartphone recordings from healthy volunteers, but the smartphone \emph{camera}
+acquisition corpus provides only ten-second clips. The step that remains inferred rather
+than observed is therefore the camera itself, not the window length or the sensing
+site.
 
 \textbf{Cohort representativeness.} The acquisition corpus comprises fifty
 volunteers with a mean age of 33 years, and does not report Fitzpatrick skin
@@ -685,10 +816,14 @@ rather than imputed; and rhythm assessment employs quality criteria constructed
 specifically for arrhythmia rather than inherited from heart-rate estimation.
 
 Rhythm classification achieves an area under the curve of 0.990 under
-leave-one-patient-out validation, and the acquisition path achieves 90\%
-beat-detection sensitivity with 28.4\,ms interval error on expert-graded smartphone
-recordings. The resulting predictive-value asymmetry---99.9\% negative against
-20.4\% positive at population prevalence---directly determines a decision rule under
+leave-one-patient-out validation on electrocardiographic intervals, and 0.992 at the
+deployed sixty-second window on fingertip photoplethysmography from an independent
+corpus, where sensitivity and specificity are 97.0\% and 95.6\%. The acquisition path
+achieves 90\% beat-detection sensitivity with 28.4\,ms interval error on expert-graded
+smartphone recordings. That the fingertip result is unchanged by decimation to 30\,Hz
+indicates camera frame rate is not the limiting factor in interval-based rhythm
+discrimination. The resulting predictive-value asymmetry---above 99.9\% negative against
+20--31\% positive at population prevalence---directly determines a decision rule under
 which the system may exclude atrial fibrillation from the risk computation but
 refers rather than asserts it. We argue this pattern, in which the evidentiary
 strength of a screening result governs the action it is permitted to take, is the
@@ -755,6 +890,22 @@ R.~G. Mark, et~al.,
 ``PhysioBank, PhysioToolkit, and PhysioNet: components of a new research resource
 for complex physiologic signals,''
 \emph{Circulation}, vol.~101, no.~23, pp.~e215--e220, 2000.
+
+\bibitem{charlton2022}
+P. H. Charlton, K. Kotzen, E. Mej\'{i}a-Mej\'{i}a, P. J. Aston, K. Budidha, J. Mant,
+C. Pettit, J. A. Behar, and P. A. Kyriacou, ``Detecting beats in the photoplethysmogram:
+benchmarking open-source algorithms,'' \emph{Physiological Measurement}, vol. 43, art.
+085007, 2022.
+
+\bibitem{torressoto2020}
+J. Torres-Soto and E. A. Ashley, ``Multi-task deep learning for cardiac rhythm detection
+in wearable devices,'' \emph{npj Digital Medicine}, vol. 3, art. 116, 2020.
+
+\bibitem{bancerewicz2025}
+J. K. Bancerewicz, J. J. Kot\l{}owski, O. Lozovyy, J. B. Morawska, and M. Rz\k{e}sa,
+``PPGbetter: smartphone photoplethysmography acquisition for heart-rate variability
+research,'' software repository and accompanying recordings, Gda\'{n}sk University of
+Technology, 2025.
 
 \bibitem{gats2017}
 Ministry of Health and Family Welfare, Government of India,
