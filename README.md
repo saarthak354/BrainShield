@@ -6,8 +6,6 @@ Answer a short questionnaire, let the camera check your pulse rhythm for 60 seco
 optionally photograph your medicines — and get a calibrated five-year absolute stroke
 probability. No account, no backend, no upload. Every computation happens in the browser.
 
-**Live demo:** https://saarthak354.github.io/BrainShield/
-
 ---
 
 ## Three inputs, one number
