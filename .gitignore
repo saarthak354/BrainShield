@@ -37,6 +37,11 @@ paper/*.out
 paper/*.bbl
 paper/*.blg
 
+# ---- local archival copies of third-party datasets ----
+# Full raw corpora fetched for local work. Never redistributed from this repo:
+# each belongs to its original publisher. See docs/how_it_was_built.md section 2.
+datasets/
+
 # ---- macOS desktop metadata ----
 # Finder droppings, never part of the project.
 .DS_Store
