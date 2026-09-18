@@ -36,3 +36,12 @@ paper/*.aux
 paper/*.out
 paper/*.bbl
 paper/*.blg
+
+# ---- macOS desktop metadata ----
+# Finder droppings, never part of the project.
+.DS_Store
+
+# ---- local environment configuration ----
+# May hold a Synapse personal access token; never commit it.
+.env
+.env.local
